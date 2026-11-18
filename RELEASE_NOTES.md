@@ -1,11 +1,4 @@
-Nieuw in **PDF Bewerken 2.0.0**: een helemaal nieuw, modern ontwerp.
+Nieuw in **PDF Bewerken 2.1.0**
 
-- **Gereedschap links**: Selecteren, Tekst, Nieuw, Vormen, Afbeelding, Symbool en Wissen. Sneltoetsen T, N, V, E, P en L.
-- **Paginaminiaturen**: klik om naar een pagina te gaan, sleep om de volgorde te veranderen, rechtsklik om te draaien, dupliceren, opslaan of verwijderen.
-- **Zwevende werkbalk** vlak boven de tekst of het object dat je bewerkt. Meer opmaak zit onder ⋯.
-- **Instellingen rechts in tabbladen**: Tekst/Object, Lagen en Fonts. Letterafstand en breedte met schuifjes.
-- **Rechtsklikmenu** op de pagina, **meldingen met "Ongedaan maken"** en **dupliceren** (Ctrl+D) van toegevoegde objecten.
-- **Donker thema**, een overzicht van alle sneltoetsen (druk op ?) en een korte rondleiding.
-- Bij **Opslaan** kun je via het pijltje ook elke pagina apart opslaan.
-
-Al je bestaande functies werken nog zoals voorheen.
+- **Lege pagina toevoegen**: klik bij de paginaminiaturen op *+ Pagina toevoegen* en kies een lege pagina (na de huidige pagina of aan het einde). Ook via rechtsklik op een miniatuur (*Lege pagina erna invoegen*) en in *Pagina's* met de knop *+ Lege pagina*. De lege pagina krijgt dezelfde maat als de pagina ervoor.
+- **Mobiele weergave**: op een telefoon of smal venster past de indeling zich vanzelf aan (gereedschap onderaan, uitklapbaar paneel, werkbalk bovenaan, knijpen om te zoomen). Kies zelf via **?** → *Weergave*: Automatisch, Computer of Mobiel.
