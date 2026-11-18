@@ -1,7 +1,11 @@
-Nieuw in **PDF Bewerken 1.4.1**
+Nieuw in **PDF Bewerken 2.0.0**: een helemaal nieuw, modern ontwerp.
 
-- **Lagenpaneel verbeterd**: je kunt een laag nu op élke plek neerzetten (een lijn toont waar hij komt). De lijst scrolt mee tijdens het slepen, en met de knopjes ▲ ▼ verschuif je een laag één plek.
-- **De achtergrond is een eigen laag**: *Achtergrond* staat onderaan in de lijst. Klik erop om hem te selecteren en de kleur te veranderen, te vervangen of te verwijderen.
-- **Opgelost**: een afbeelding die je achter de tekst zette, verdween soms achter een achtergrond over de hele pagina (bv. PDF's uit Canva). Ze blijft nu zichtbaar, net boven de achtergrond.
+- **Gereedschap links**: Selecteren, Tekst, Nieuw, Vormen, Afbeelding, Symbool en Wissen. Sneltoetsen T, N, V, E, P en L.
+- **Paginaminiaturen**: klik om naar een pagina te gaan, sleep om de volgorde te veranderen, rechtsklik om te draaien, dupliceren, opslaan of verwijderen.
+- **Zwevende werkbalk** vlak boven de tekst of het object dat je bewerkt. Meer opmaak zit onder ⋯.
+- **Instellingen rechts in tabbladen**: Tekst/Object, Lagen en Fonts. Letterafstand en breedte met schuifjes.
+- **Rechtsklikmenu** op de pagina, **meldingen met "Ongedaan maken"** en **dupliceren** (Ctrl+D) van toegevoegde objecten.
+- **Donker thema**, een overzicht van alle sneltoetsen (druk op ?) en een korte rondleiding.
+- Bij **Opslaan** kun je via het pijltje ook elke pagina apart opslaan.
 
-Heb je al een eerdere versie? Klik op **Nu bijwerken** als de melding verschijnt.
+Al je bestaande functies werken nog zoals voorheen.
