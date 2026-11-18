@@ -1,7 +1,7 @@
 {
   "name": "pdf-bewerken",
   "productName": "PDF Bewerken",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "Tekst, lettertypes, afbeeldingen en vormen in PDF-bestanden aanpassen",
   "author": "PDF Bewerken",
   "main": "main.js",

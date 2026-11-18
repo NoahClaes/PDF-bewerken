@@ -141,8 +141,13 @@
   .pml{text-align:center;font-size:13px;margin-top:6px}
   .pmb{position:absolute;top:6px;right:6px;display:none;gap:3px}.pmc:hover .pmb{display:flex}.pmb button{padding:2px 7px;font-size:13px;background:#fff}
   .pmmark{position:absolute;width:4px;background:var(--accent);border-radius:2px;pointer-events:none}
+  .lmv{margin-left:auto;display:none;gap:2px;flex:none}.lrow:hover .lmv{display:flex}.lmv button{padding:1px 6px;font-size:10px;min-width:0;background:#fff}
+  .lrow.lbg{background:#f6f7f9}
+  #ly-inner{margin-top:6px}
+  body.ldragging,body.ldragging *{cursor:grabbing!important}
+  body.m-obj .ohit.bgo:hover{outline:none;background:none}body.m-obj .ohit.bgo{cursor:default}
   .lytabs{display:flex;background:#eef0f4;border-radius:9px;padding:3px;margin-bottom:8px}.lytabs button{flex:1;border:0;background:none;justify-content:center;padding:5px}.lytabs button.on{background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.12);color:inherit}
-  #ly-list{position:relative;max-height:46vh;overflow:auto}
+  #ly-list{position:relative;max-height:56vh;overflow:auto;padding:2px 0}
   .lrow{display:flex;align-items:center;gap:8px;padding:5px 6px;margin:4px 0;border-radius:9px;background:#f1f3f6;border:1.5px solid transparent;cursor:pointer;user-select:none}
   .lrow:hover{background:#e8ebf1}.lrow.lsel{border-color:#8b5cf6;background:#f3efff}.lrow.lorig{background:#fff;border:1.5px dashed #c7cbd2;cursor:default}
   .lrow.ldrag{opacity:.45}.lrow.lsub{margin-left:18px;background:#f8f9fb}
@@ -288,6 +293,7 @@
       <h3 style="justify-content:space-between"><span id="ly-title">Lagen</span><button id="ly-close" title="Sluiten" style="padding:2px 8px">✕</button></h3>
       <div class="lytabs"><button id="ly-all" class="on">Alles</button><button id="ly-ov">Overlappend</button></div>
       <div id="ly-list"></div>
+      <div id="ly-inner"></div>
       <p class="muted" id="ly-hint" style="margin:6px 0 0;font-size:12px"></p>
       <hr>
     </div>
@@ -2638,11 +2644,14 @@ const isLiftedEx=o=>!!(o.lift||o.img||o.rot||exMoved(o));
 const zDef=(k,r)=>r.z!=null?r.z:(k==='x'?5e5:k==='n'?1e6:2e6)+(r.id||0);
 function layerList(pn,mode){   // mode: 'export' | 'preview' (zonder open tekstblok) | 'arrange' (met open tekstblok)
   const L=[],dr=S.draft&&S.draft.page===pn?S.draft:null;
+  // achtergrond (vlak of afbeelding over de hele pagina) die nog in de pagina-inhoud zit: altijd de onderste laag
+  const PP=S.pages[pn-1],gone=new Set(S.objs.filter(o=>o.kind==='ex'&&o.page===pn&&(o.del||isLiftedEx(o))).map(o=>o.ord));
+  const bgs=((PP&&PP.objs)||[]).filter(o=>o.bg&&!gone.has(o.ord)).map(o=>({kind:'bg',obj:o,ord:o.ord}));
   for(const e of S.edits){if(e.page!==pn||!(e.text&&e.text.trim()))continue;if(dr&&dr.id===e.id)continue;L.push({kind:'t',ref:e})}
   if(dr&&mode==='arrange')L.push({kind:'t',ref:dr});
   for(const o of S.objs){if(o.page!==pn||o.del)continue;if(o.kind==='new')L.push({kind:'n',ref:o});else if(o.kind==='ex'&&isLiftedEx(o))L.push({kind:'x',ref:o})}
   const by=(a,b)=>zDef(a.kind,a.ref)-zDef(b.kind,b.ref);
-  return [...L.filter(i=>i.ref.layer==='back').sort(by),{kind:'orig'},...L.filter(i=>i.ref.layer!=='back').sort(by)];
+  return [...bgs,...L.filter(i=>i.ref.layer==='back').sort(by),{kind:'orig'},...L.filter(i=>i.ref.layer!=='back').sort(by)];
 }
 function mkRender(pdf,opts){
   opts=opts||{};
@@ -2776,11 +2785,14 @@ function mkRender(pdf,opts){
     const toR=({r})=>({x0:P.x0+r.x,x1:P.x0+r.x+r.w,y0:P.y1-(r.y+r.h),y1:P.y1-r.y});
     const tItems=items.filter(i=>!i.r.ul),uItems=items.filter(i=>i.r.ul);
     // 1. oude tekst echt verwijderen; verplaatste objecten uit de inhoud halen
-    let lifted=new Map();
+    let lifted=new Map(),splitRefs=null;
     try{
       const guard=P.lines.map(l=>({x0:P.x0+l.xTL,x1:P.x0+l.xTL+l.wpt,y:P.y1-l.baseTL,fs:l.fs}));
       const ops=await objOpsFor(pn,pdf,page);
-      const counts=removeTextInRects(pdf,page,tItems.map(toR),uItems.map(toR),ops,guard);
+      const pre=layerList(pn,pv?'preview':'export'),poi=pre.findIndex(i=>i.kind==='orig');
+      const wantSplit=pre.some(i=>i.kind==='bg')&&pre.slice(0,poi).some(i=>i.kind!=='bg');
+      const counts=removeTextInRects(pdf,page,tItems.map(toR),uItems.map(toR),ops,guard,{bgMin:0.8*P.wPt*P.hPt,wantSplit});
+      splitRefs=counts.split||null;
       tItems.forEach((it,i)=>{it.n=counts[i];it.unsafe=!!(counts.unsafe&&counts.unsafe[i]);it.col=counts.colors?counts.colors[i]:null;report.removed+=counts[i]});
       uItems.forEach((it,i)=>{it.n=counts.kills[i]});
       lifted=counts.lifted||lifted;
@@ -2797,7 +2809,7 @@ function mkRender(pdf,opts){
       else if(it.kind==='n'){await drawNewObj(pdf,page,P,it.ref);drawn.add('n:'+it.ref.id+':'+hashOf(it.ref))}
       else if(it.kind==='x'){const s=lifted.get(it.ref.ord);if(s)page.pushOperators(PDFLib.PDFOperator.of(s))}
     };
-    const back=list.slice(0,oi),front=list.slice(oi+1);
+    const back=list.slice(0,oi).filter(i=>i.kind!=='bg'),front=list.slice(oi+1);
     if(back.length){
       // achter de tekst: tekenen in een nieuwe inhoudsstroom en die vooraan zetten
       page.node.normalize();
@@ -2807,7 +2819,9 @@ function mkRender(pdf,opts){
       const arr=page.node.Contents();
       if(arr instanceof PDFLib.PDFArray){
         const add=[];for(let i=arr.size()-1;i>=0;i--){if(!before.has(String(arr.get(i)))){add.unshift(arr.get(i));arr.remove(i)}}
-        add.forEach((r,j)=>arr.insert(j,r));
+        // net boven de achtergrond (als die er is), anders helemaal vooraan
+        let at=0;if(splitRefs){for(let i=0;i<arr.size();i++)if(String(arr.get(i))===splitRefs[0]){at=i+1;break}}
+        add.forEach((r,j)=>arr.insert(at+j,r));
       }
       page.contentStream=undefined;page.contentStreamRef=undefined;
     }
@@ -3097,7 +3111,7 @@ function textStarts(segs){
   }}
   return out;
 }
-function removeTextInRects(pdf,page,rects,killRects,objOps,guard){
+function removeTextInRects(pdf,page,rects,killRects,objOps,guard,opts7){
   killRects=killRects||[];
   const {PDFName,PDFArray,PDFRawStream,decodePDFRawStream}=PDFLib;
   const ctx=pdf.context;
@@ -3116,6 +3130,9 @@ function removeTextInRects(pdf,page,rects,killRects,objOps,guard){
   // ---- objecten (afbeeldingen, logo's, vormen, lijnen) ----
   let stroke=null,scsName='',lw=1,pathOut=-1,ord=0;
   let clips=[],gsT={fc:'',sc:'',m:{},gs:''},pendClip=null,pathTxt=[],lift='';
+  // waar eindigt de achtergrond? (vlakken/afbeeldingen over de hele pagina vóór de eerste tekst of het eerste andere object)
+  let seenFg=false,pendSplit=false,split=null;
+  const bgCheck=(o,op)=>{if(!opts7||seenFg||!o)return;const w=o.bb[2]-o.bb[0],h=o.bb[3]-o.bb[1],dropped=!!(op&&(op.del||op.M||op.lift||op.img));if(dropped)return;if(w*h>=opts7.bgMin)pendSplit=true;else seenFg=true};
   // zichtbaar deel = vak van het object binnen alle knipvensters
   const clipBB=bb=>{let r=bb.slice();for(const c of clips){const x0=Math.max(r[0],c.bb[0]),y0=Math.max(r[1],c.bb[1]),x1=Math.min(r[2],c.bb[2]),y1=Math.min(r[3],c.bb[3]);if(x1>x0&&y1>y0)r=[x0,y0,x1,y1]}return r};
   // verplaatst/vergroot/vervangen object: op de oude plek weghalen en achteraan opnieuw tekenen,
@@ -3167,6 +3184,7 @@ function removeTextInRects(pdf,page,rects,killRects,objOps,guard){
   for(const sg of segs){
     const a=nums(sg.args);let drop=false,repl=null,post='';
     const segTxt=src.slice(sg.start,sg.end),O=sg.op;
+    if(O==='Tj'||O==='TJ'||O==="'"||O==='"'||O==='sh')seenFg=true;
     if(PATHOPS.has(O)){if(pathOut<0)pathOut=out.length;pathTxt.push(segTxt)}
     if(O==='cs'||O==='rg'||O==='g'||O==='k')gsT.fc=segTxt;else if(O==='sc'||O==='scn')gsT.fc+=segTxt;
     else if(O==='CS'||O==='RG'||O==='G'||O==='K')gsT.sc=segTxt;else if(O==='SC'||O==='SCN')gsT.sc+=segTxt;
@@ -3187,7 +3205,7 @@ function removeTextInRects(pdf,page,rects,killRects,objOps,guard){
           let pts,fm=null;
           if(info.sub==='/Image')pts=[[0,0],[1,0],[0,1],[1,1]];
           else{const b=info.bb&&info.bb.length===4?info.bb:[0,0,1,1],mx=info.mx&&info.mx.length===6?info.mx:[1,0,0,1,0,0];pts=[[b[0],b[1]],[b[2],b[1]],[b[0],b[3]],[b[2],b[3]]].map(([x,y])=>[x*mx[0]+y*mx[2]+mx[4],x*mx[1]+y*mx[3]+mx[5]]);fm=mmul([b[2]-b[0],0,0,b[3]-b[1],b[0],b[1]],mx)}
-          const op=imgObj(info.sub==='/Image'?'image':'form',pts,nm.v);
+          const op=imgObj(info.sub==='/Image'?'image':'form',pts,nm.v);bgCheck(objects[objects.length-1],op);
           if(op){any=true;
             if(op.del){drop=true;repl='\n'}
             else if(op.M||op.img||op.lift){drop=true;repl='\n';counts.lifted.set(objects[objects.length-1].ord,lifted(op,op.img?(fm?'q '+fmtM(fm)+' cm /'+op.img+' Do Q':'/'+op.img+' Do'):'/'+nm.v+' Do'))}
@@ -3201,7 +3219,7 @@ function removeTextInRects(pdf,page,rects,killRects,objOps,guard){
           }
         }
         break}
-      case 'BI':{const op=imgObj('image',[[0,0],[1,0],[0,1],[1,1]],null);if(op){any=true;
+      case 'BI':{const op=imgObj('image',[[0,0],[1,0],[0,1],[1,1]],null);bgCheck(objects[objects.length-1],op);if(op){any=true;
         if(op.del){drop=true;repl='\n'}
         else if(op.M||op.img||op.lift){drop=true;repl='\n';counts.lifted.set(objects[objects.length-1].ord,lifted(op,op.img?'/'+op.img+' Do':segTxt))}
         else{out+=objPre(op);post='\nQ\n'}}break}
@@ -3221,6 +3239,7 @@ function removeTextInRects(pdf,page,rects,killRects,objOps,guard){
           let bb=bboxOf(path);if(hasS){const e=lw*scl(ctm)/2;bb=[bb[0]-e,bb[1]-e,bb[2]+e,bb[3]+e]}bb=clipBB(bb);
           const o={ord:ord++,kind:'path',bb,fill:hasF?fill:null,stroke:hasS?stroke:null,lw:hasS?lw*scl(ctm):null,hasF,hasS};objects.push(o);
           const op=!killed&&objOps&&objOps.get(o.ord);
+          if(!killed)bgCheck(o,op);
           if(op&&pathOut>=0){
             any=true;
             if(op.del){out=out.slice(0,pathOut);drop=true;repl='\n'}
@@ -3240,10 +3259,16 @@ function removeTextInRects(pdf,page,rects,killRects,objOps,guard){
     }
     if(drop){any=true;out+=(repl!==null?repl:'\n')}else out+=src.slice(sg.start,sg.end);
     if(post)out+=post;
+    if(pendSplit){split={pos:out.length,ctm:ctm.slice()};pendSplit=false}
   }
   out+=tail;
-  if(any)out='q\n'+out+'\nQ\n';
-  if(any){
+  const doSplit=!!(opts7&&opts7.wantSplit&&split);
+  if(any||doSplit){out='q\n'+out+'\nQ\n';if(split)split.pos+=2}
+  if(doSplit){
+    // inhoud in twee stromen: achtergrond | (hier komt 'achter tekst') | de rest. Tussenin geldt weer de gewone paginaruimte.
+    const r1=ctx.register(ctx.flateStream(s2b(out.slice(0,split.pos)+'\nq '+fmtM(minv(split.ctm))+' cm\n'))),r2=ctx.register(ctx.flateStream(s2b('\nQ\n'+out.slice(split.pos))));
+    page.node.set(PDFName.of('Contents'),ctx.obj([r1,r2]));counts.split=[String(r1),String(r2)];
+  }else if(any){
     const ns=ctx.flateStream(s2b(out));
     page.node.set(PDFName.of('Contents'),ctx.obj([ctx.register(ns)]));
   }
@@ -3378,8 +3403,8 @@ function objItems(P){
   const out=[],eds=new Map();
   for(const e of S.objs)if(e.kind==='ex'&&e.page===P.n)eds.set(e.ord,e);
   for(const o of (P.objs||[])){
-    if(o.bg)continue;const ed=eds.get(o.ord);if(ed&&ed.del)continue;
-    out.push({key:'x:'+P.n+':'+o.ord,P,src:o,ed,t:o.t,b:ed?ed.b:{x:o.x,y:o.y,w:o.w,h:o.h}});
+    const ed=eds.get(o.ord);if(ed&&ed.del)continue;
+    out.push({key:'x:'+P.n+':'+o.ord,P,src:o,ed,t:o.t,b:ed?ed.b:{x:o.x,y:o.y,w:o.w,h:o.h},bg:!!o.bg});
   }
   for(const e of S.objs)if(e.kind==='new'&&e.page===P.n&&!e.del)out.push({key:'o:'+e.id,P,ed:e,t:e.t,b:e.b,isNew:true});
   return out;
@@ -3430,7 +3455,7 @@ function paintObjLayer(P){
   const sel=new Set(S.opage===P.n?S.osel:[]);
   if(S.odrag&&S.odrag.page===P.n)for(const [k,g] of S.odrag.ghosts){const it=items.find(i=>i.key===k);if(!it)continue;const b=aabb(nbox(it.b),rotOf(it));Object.assign(g.style,{left:b.x*sc+'px',top:b.y*sc+'px',width:b.w*sc+'px',height:b.h*sc+'px'});P.ov.appendChild(g)}
   for(const it of items){
-    const b=nbox(it.b),d=document.createElement('div');d.className='ohit'+(sel.has(it.key)?' sel':'');d.dataset.okey=it.key;
+    const b=nbox(it.b),d=document.createElement('div');d.className='ohit'+(sel.has(it.key)?' sel':'')+(it.bg?' bgo':'');d.dataset.okey=it.key;
     const pw=Math.max(b.w*sc,8),ph=Math.max(b.h*sc,8);
     Object.assign(d.style,{left:(b.x*sc-(pw-b.w*sc)/2)+'px',top:(b.y*sc-(ph-b.h*sc)/2)+'px',width:pw+'px',height:ph+'px'});
     if(rotOf(it))Object.assign(d.style,{transform:`rotate(${rotOf(it)}deg)`,transformOrigin:'50% 50%'});
@@ -3481,6 +3506,9 @@ function objPointerDown(ev,P){
   const t=ev.target,h=t.dataset&&t.dataset.h,key=t.dataset&&t.dataset.okey;
   if(h){startObjResize(ev,P,h);return}
   if(key){
+    // achtergrond: klikken selecteert hem, slepen trekt een selectiekader (zoals in Canva)
+    const itb=objItemByKey(key);
+    if(itb&&itb.bg&&!S.osel.includes(key)&&!(ev.shiftKey||ev.ctrlKey||ev.metaKey)){startObjBand(ev,P,key);return}
     if(S.opage!==P.n){S.osel=[];S.opage=P.n}
     if(ev.shiftKey||ev.ctrlKey||ev.metaKey){if(S.osel.includes(key)){S.osel=S.osel.filter(k=>k!==key);afterObjSel(P);return}S.osel.push(key)}
     else if(!S.osel.includes(key))S.osel=[key];
@@ -3583,7 +3611,7 @@ function startObjResize(ev,P,h){
   const up=()=>{window.removeEventListener('pointermove',mv);window.removeEventListener('pointerup',up);if(moved)objChanged(P)};
   window.addEventListener('pointermove',mv);window.addEventListener('pointerup',up);
 }
-function startObjBand(ev,P){
+function startObjBand(ev,P,clickKey){
   ev.preventDefault();
   const r=P.ov.getBoundingClientRect(),sx=ev.clientX-r.left,sy=ev.clientY-r.top,add=ev.shiftKey||ev.ctrlKey||ev.metaKey;
   let rb=null;
@@ -3591,10 +3619,10 @@ function startObjBand(ev,P){
     Object.assign(rb.style,{left:Math.min(sx,x)+'px',top:Math.min(sy,y)+'px',width:Math.abs(x-sx)+'px',height:Math.abs(y-sy)+'px'})};
   const up=e=>{
     window.removeEventListener('pointermove',mv);window.removeEventListener('pointerup',up);
-    if(!rb){if(!add){S.osel=[];afterObjSel(P)}return}
+    if(!rb){if(clickKey){S.opage=P.n;S.osel=[clickKey];afterObjSel(P)}else if(!add){S.osel=[];afterObjSel(P)}return}
     rb.remove();const x=e.clientX-r.left,y=e.clientY-r.top,sc=S.scale;
     const box={x:Math.min(sx,x)/sc,y:Math.min(sy,y)/sc,w:Math.abs(x-sx)/sc,h:Math.abs(y-sy)/sc};
-    const inside=objItems(P).filter(it=>{const b=nbox(it.b);return b.x>=box.x-1&&b.y>=box.y-1&&b.x+b.w<=box.x+box.w+1&&b.y+b.h<=box.y+box.h+1}).map(i=>i.key);
+    const inside=objItems(P).filter(it=>{if(it.bg)return false;const b=nbox(it.b);return b.x>=box.x-1&&b.y>=box.y-1&&b.x+b.w<=box.x+box.w+1&&b.y+b.h<=box.y+box.h+1}).map(i=>i.key);
     if(S.opage!==P.n)S.osel=[];
     S.osel=add?[...new Set(S.osel.concat(inside))]:inside;
     afterObjSel(P);
@@ -3652,7 +3680,7 @@ function fillObjForm(){
   $('#o-replace').style.display=img?'':'none';
   $('#o-reset').style.display=items.some(i=>!i.isNew&&i.ed)?'':'none';
   let desc='';
-  if(one&&!one.isNew){desc=one.t==='image'?'Afbeelding uit de PDF.':one.t==='form'?'Groep uit de PDF (vaak een logo of een ingevoegde afbeelding).':'Getekende vorm uit de PDF.';if(one.ed&&one.ed.img)desc+=' Vervangen door een nieuwe afbeelding.'}
+  if(one&&!one.isNew){desc=one.bg?'Achtergrond van de pagina (een vlak of afbeelding over de hele pagina).':one.t==='image'?'Afbeelding uit de PDF.':one.t==='form'?'Groep uit de PDF (vaak een logo of een ingevoegde afbeelding).':'Getekende vorm uit de PDF.';if(one.ed&&one.ed.img)desc+=' Vervangen door een nieuwe afbeelding.'}
   else if(items.length>1)desc='Ze bewegen en schalen samen.';
   $('#o-desc').textContent=desc;
   $('#o-hint').textContent=items.some(i=>i.t==='form')?'Tip: bestaat een logo uit losse stukjes? Sleep een kader eromheen om alles te pakken.':'';
@@ -3993,6 +4021,7 @@ function arrangeTargets(){
   return [];
 }
 function itemBox(it){
+  if(it.kind==='bg')return {x:it.obj.x,y:it.obj.y,w:it.obj.w,h:it.obj.h};
   if(it.kind==='t'){const L=layoutBlock(it.ref,measurer(it.ref));return {x:it.ref.xTL,y:it.ref.baseTL-it.ref.fs,w:L.W,h:L.H}}
   return nbox(it.ref.b);
 }
@@ -4019,8 +4048,9 @@ function arrange(action){
     if(action==='forward'){let j=last+1;while(j<arr.length&&!overl(arr[j]))j++;if(j<arr.length){const r2=rest.slice();const pos=r2.indexOf(arr[j]);arr=[...r2.slice(0,pos+1),...picked,...r2.slice(pos+1)]}}
     else{let j=first-1;while(j>=0&&!overl(arr[j]))j--;if(j>=0){const r2=rest.slice();const pos=r2.indexOf(arr[j]);arr=[...r2.slice(0,pos),...picked,...r2.slice(pos)]}}
   }
+  arr=[...arr.filter(i=>i.kind==='bg'),...arr.filter(i=>i.kind!=='bg')];
   const oi=arr.findIndex(i=>i.kind==='orig');
-  arr.forEach((it,idx)=>{if(it.kind==='orig')return;it.ref.layer=idx<oi?'back':'front';it.ref.z=idx});
+  arr.forEach((it,idx)=>{if(it.kind==='orig'||it.kind==='bg')return;it.ref.layer=idx<oi?'back':'front';it.ref.z=idx});
   const back=T[0].ref.layer==='back';
   const msg={front:'Helemaal naar voren gezet.',back:'Helemaal naar achteren gezet, achter de tekst van de pagina.',behind:'Achter de tekst van de pagina gezet.',infront:'Voor de tekst van de pagina gezet.',forward:'Een laag naar voren.',backward:'Een laag naar achteren.'}[action];
   if(T[0].kind==='t'){commit()}
@@ -4067,8 +4097,8 @@ const thumbImgs=new Map();
 function thumbNew(o){
   const c=document.createElement('canvas');c.width=128;c.height=80;c.className='lthumb';const x=c.getContext('2d');
   x.fillStyle='#fff';x.fillRect(0,0,128,80);
-  const b=nbox(o.b),bw=Math.max(b.w,1),bh=Math.max(b.h,1),k=Math.min(112/bw,64/bh),w=bw*k,h=bh*k,cx=64,cy=40;
-  x.save();x.translate(cx,cy);if(o.rot)x.rotate(o.rot*Math.PI/180);
+  const b=nbox(o.b),bw=Math.max(b.w,1),bh=Math.max(b.h,1),k=Math.min(112/bw,64/bh),w=bw*k,h=bh*k;
+  x.save();x.translate(64,40);if(o.rot)x.rotate(o.rot*Math.PI/180);
   const fill=o.fill&&!o.nofill?o.fill:null,stroke=o.stroke&&o.lw>0?o.stroke:null;x.lineWidth=Math.max(1,(o.lw||1)*k);
   if(o.t==='img'){
     let im=thumbImgs.get(o.img);
@@ -4080,17 +4110,27 @@ function thumbNew(o){
     if(o.t==='arrow'){const a=Math.atan2(h*sy,w*sx),L=Math.max(8,x.lineWidth*4);x.fillStyle=o.stroke||'#000';x.beginPath();x.moveTo(w/2*sx,h/2*sy);x.lineTo(w/2*sx-L*Math.cos(a-0.5),h/2*sy-L*Math.sin(a-0.5));x.lineTo(w/2*sx-L*Math.cos(a+0.5),h/2*sy-L*Math.sin(a+0.5));x.fill()}}
   x.restore();return c;
 }
+// de achtergrond (een vlak of afbeelding over de hele pagina) als staal tonen
+function thumbBg(o){
+  const c=document.createElement('canvas');c.width=128;c.height=80;c.className='lthumb';const x=c.getContext('2d');
+  x.fillStyle=o.fill||'#ffffff';x.fillRect(0,0,128,80);
+  if(o.t!=='path'){const P=S.pages[S.layerPn-1];if(P)return thumbOf(P,{x:o.x,y:o.y,w:o.w,h:o.h})}
+  return c;
+}
 function layerBox(it){
   if(it.kind==='t'){const e=it.ref;try{const L=layoutBlock(e,measurer(e));return {x:e.xTL,y:e.baseTL-e.fs,w:L.W,h:L.H+e.fs*0.3}}catch(_){return {x:e.xTL,y:e.baseTL-e.fs,w:e.fs*4,h:e.fs*1.3}}}
   if(it.kind==='orig')return null;
+  if(it.kind==='bg')return {x:it.obj.x,y:it.obj.y,w:it.obj.w,h:it.obj.h};
   return aabb(nbox(it.ref.b),+it.ref.rot||0);
 }
 function layerLabel(it){
   if(it.kind==='orig')return '<b>Pagina-inhoud</b><small>tekst en afbeeldingen uit de PDF</small>';
+  if(it.kind==='bg')return '<b>Achtergrond</b><small>'+(it.obj.t==='path'?'kleurvlak':'afbeelding')+' over de hele pagina</small>';
   if(it.kind==='t')return '“'+esc(String(it.ref.text||'').replace(/\s+/g,' ').slice(0,34))+'”<small>tekst'+(it.ref.layer==='back'?' · achter tekst':'')+'</small>';
   const nm=OLABEL[it.ref.t]||'Object';
   return esc(nm)+'<small>'+(it.kind==='x'?'uit de PDF':'toegevoegd')+(it.ref.layer==='back'?' · achter tekst':'')+(it.ref.rot?' · '+it.ref.rot+'°':'')+'</small>';
 }
+const rowKey=r=>r.kind==='orig'?'orig':r.kind==='bg'?'bg'+r.ord:r.ref;
 let layersTimer=null;
 function layersSoon(){if(!S.showLayers)return;clearTimeout(layersTimer);layersTimer=setTimeout(renderLayers,250)}
 function renderLayers(){
@@ -4098,100 +4138,129 @@ function renderLayers(){
   if(!S.showLayers||!S.doc){box.hidden=true;return}
   box.hidden=false;
   const pn=layerPage(),P=S.pages[pn-1];if(!P)return;
+  S.layerPn=pn;
   const draw=layerList(pn,'arrange'),sel=layerSelRefs();
+  const selKeys=new Set(S.mode==='obj'?S.osel:[]);
+  const isSel=r=>(r.ref&&sel.has(r.ref))||(r.kind==='bg'&&selKeys.has('x:'+pn+':'+r.ord));
   let rows=draw.slice().reverse();           // bovenste laag bovenaan, zoals in Canva
-  const selItemsHere=rows.filter(r=>r.ref&&sel.has(r.ref));
-  if(S.layerFilter==='overlap'&&selItemsHere.length){
-    const u=unionBox(selItemsHere.map(layerBox).filter(Boolean));
-    rows=rows.filter(r=>r.kind==='orig'||sel.has(r.ref)||(layerBox(r)&&boxHit(layerBox(r),u)));
+  const selHere=rows.filter(isSel);
+  if(S.layerFilter==='overlap'&&selHere.length){
+    const u=unionBox(selHere.map(layerBox).filter(Boolean));
+    rows=rows.filter(r=>r.kind==='orig'||isSel(r)||(layerBox(r)&&boxHit(layerBox(r),u)));
   }
-  // objecten die nog in de pagina-inhoud zitten (kunnen eruit gesleept worden)
-  const lifted=new Set(S.objs.filter(o=>o.kind==='ex'&&o.page===pn&&isLiftedEx(o)&&!o.del).map(o=>o.ord));
-  const deleted=new Set(S.objs.filter(o=>o.kind==='ex'&&o.page===pn&&o.del).map(o=>o.ord));
-  let inner=(P.objs||[]).filter(o=>!o.bg&&!lifted.has(o.ord)&&!deleted.has(o.ord)&&o.w*o.h>=40);
-  if(S.layerFilter==='overlap'&&selItemsHere.length){const u=unionBox(selItemsHere.map(layerBox).filter(Boolean));inner=inner.filter(o=>boxHit({x:o.x,y:o.y,w:o.w,h:o.h},u))}
-  inner=inner.slice(0,60);
+  S.layerRows=rows;
   $('#ly-title').textContent='Lagen · pagina '+pn;
   const list=$('#ly-list');list.innerHTML='';
-  S.layerRows=rows;S.layerPn=pn;
   rows.forEach((r,i)=>{
-    const el=document.createElement('div');el.className='lrow'+(r.kind==='orig'?' lorig':'')+(r.ref&&sel.has(r.ref)?' lsel':'');el.dataset.i=i;
-    const hd=document.createElement('span');hd.className='lgrip';hd.textContent='⠿';hd.title=r.kind==='orig'?'':'Sleep om de volgorde te veranderen';
-    if(r.kind==='orig')hd.style.visibility='hidden';
-    const th=r.kind==='orig'?thumbOf(P,{x:0,y:0,w:P.wPt,h:P.hPt}):r.kind==='n'?thumbNew(r.ref):thumbOf(P,layerBox(r));
+    const el=document.createElement('div');el.className='lrow'+(r.kind==='orig'?' lorig':'')+(r.kind==='bg'?' lbg':'')+(isSel(r)?' lsel':'');el.dataset.i=i;
+    const hd=document.createElement('span');hd.className='lgrip';hd.textContent='⠿';
+    if(r.kind==='orig')hd.style.visibility='hidden';else hd.title='Sleep om de volgorde te veranderen';
+    const th=r.kind==='orig'?thumbOf(P,{x:0,y:0,w:P.wPt,h:P.hPt}):r.kind==='bg'?thumbBg(r.obj):r.kind==='n'?thumbNew(r.ref):thumbOf(P,layerBox(r));
     const lb=document.createElement('span');lb.className='llbl';lb.innerHTML=layerLabel(r);
-    el.append(hd,th,lb);list.appendChild(el);
-    if(r.kind==='orig'&&inner.length){
-      const sub=document.createElement('div');sub.className='lsubs';
-      const tg=document.createElement('a');tg.href='#';tg.className='lsubt';tg.textContent=(S.layerOpenSub?'▾ ':'▸ ')+inner.length+' object'+(inner.length>1?'en':'')+' in de pagina-inhoud';
-      tg.onclick=ev=>{ev.preventDefault();S.layerOpenSub=!S.layerOpenSub;renderLayers()};sub.appendChild(tg);
-      if(S.layerOpenSub)for(const o of inner){
-        const se=document.createElement('div');se.className='lrow lsub';se.dataset.okey='x:'+pn+':'+o.ord;
-        const g2=document.createElement('span');g2.className='lgrip';g2.textContent='⠿';g2.title='Sleep naar boven of onder de pagina-inhoud om hem een eigen laag te geven';
-        const l2=document.createElement('span');l2.className='llbl';l2.innerHTML=esc(OLABEL[o.t]||'Object')+'<small>in de pagina-inhoud</small>';
-        se.append(g2,thumbOf(P,{x:o.x,y:o.y,w:o.w,h:o.h}),l2);sub.appendChild(se);
-      }
-      list.appendChild(sub);
-    }
+    el.append(hd,th,lb);
+    if(r.kind!=='orig'){const mv=document.createElement('span');mv.className='lmv';mv.innerHTML='<button data-mv="up" title="Eén laag omhoog">▲</button><button data-mv="down" title="Eén laag omlaag">▼</button>';el.appendChild(mv)}
+    list.appendChild(el);
   });
+  // objecten die nog in de pagina-inhoud zitten (kunnen in de lijst gesleept worden)
+  const lifted=new Set(S.objs.filter(o=>o.kind==='ex'&&o.page===pn&&(isLiftedEx(o)||o.del)).map(o=>o.ord));
+  let inner=(P.objs||[]).filter(o=>!o.bg&&!lifted.has(o.ord)&&o.w*o.h>=40);
+  if(S.layerFilter==='overlap'&&selHere.length){const u=unionBox(selHere.map(layerBox).filter(Boolean));inner=inner.filter(o=>boxHit({x:o.x,y:o.y,w:o.w,h:o.h},u))}
+  inner=inner.slice(0,60);
+  const ib=$('#ly-inner');ib.innerHTML='';
+  if(inner.length){
+    const tg=document.createElement('a');tg.href='#';tg.className='lsubt';tg.textContent=(S.layerOpenSub?'▾ ':'▸ ')+inner.length+' object'+(inner.length>1?'en':'')+' in de pagina-inhoud';
+    tg.title='Afbeeldingen en vormen die samen met de tekst in de PDF staan. Sleep er een naar de lijst hierboven om hem een eigen laag te geven.';
+    tg.onclick=ev=>{ev.preventDefault();S.layerOpenSub=!S.layerOpenSub;renderLayers()};ib.appendChild(tg);
+    if(S.layerOpenSub)for(const o of inner){
+      const se=document.createElement('div');se.className='lrow lsub'+(selKeys.has('x:'+pn+':'+o.ord)?' lsel':'');se.dataset.okey='x:'+pn+':'+o.ord;
+      const g2=document.createElement('span');g2.className='lgrip';g2.textContent='⠿';g2.title='Sleep naar de lijst hierboven om hem een eigen laag te geven';
+      const l2=document.createElement('span');l2.className='llbl';l2.innerHTML=esc(OLABEL[o.t]||'Object')+'<small>in de pagina-inhoud</small>';
+      se.append(g2,thumbOf(P,{x:o.x,y:o.y,w:o.w,h:o.h}),l2);ib.appendChild(se);
+    }
+  }
   $('#ly-all').classList.toggle('on',S.layerFilter!=='overlap');$('#ly-ov').classList.toggle('on',S.layerFilter==='overlap');
-  $('#ly-hint').textContent=S.layerFilter==='overlap'&&!selItemsHere.length?'Selecteer eerst iets om te zien wat ermee overlapt.':'Sleep een laag omhoog of omlaag. Boven de pagina-inhoud = voor de tekst, eronder = achter de tekst.';
+  $('#ly-hint').textContent=S.layerFilter==='overlap'&&!selHere.length?'Selecteer eerst iets om te zien wat ermee overlapt.':'Sleep een laag naar de plek waar je hem wilt, of gebruik ▲ ▼. Boven de pagina-inhoud = voor de tekst, eronder = achter de tekst.';
 }
 // een laag aanklikken = selecteren
 function selectLayerRow(r,pn){
   const P=S.pages[pn-1];
   if(r.kind==='t'){if(S.draft&&S.draft.id===r.ref.id)return;if(S.mode!=='edit')setMode('edit');selectEdit(r.ref.id);return}
   if(r.kind==='orig')return;
+  if(r.kind==='bg'){selectLayerKey('x:'+pn+':'+r.ord,pn);return}
   if(S.mode!=='obj')setMode('obj');
   S.opage=pn;S.osel=[r.kind==='n'?'o:'+r.ref.id:'x:'+pn+':'+r.ref.ord];afterObjSel(P);renderLayers();
 }
 function selectLayerKey(k,pn){if(S.mode!=='obj')setMode('obj');S.opage=pn;S.osel=[k];afterObjSel(S.pages[pn-1]);renderLayers()}
+// een object uit de PDF (ook de achtergrond) een eigen laag geven
+function liftKey(pn,key){const P=S.pages[pn-1],it=objItems(P).find(x=>x.key===key);if(!it)return null;const ed=ensureEd(it);ed.lift=true;return {kind:'x',ref:ed}}
 // nieuwe volgorde (bovenste eerst, zoals in de lijst) toepassen op de pagina
 function applyLayerOrder(pn,topFirst){
-  const drawOrder=topFirst.slice().reverse(),oi=drawOrder.findIndex(i=>i.kind==='orig');
-  drawOrder.forEach((it,idx)=>{if(it.kind==='orig')return;it.ref.layer=idx<oi?'back':'front';it.ref.z=idx});
-  if(S.draft&&drawOrder.some(i=>i.ref===S.draft))commit();
+  let draw=topFirst.slice().reverse();
+  draw=[...draw.filter(i=>i.kind==='bg'),...draw.filter(i=>i.kind!=='bg')];   // de achtergrond blijft onderaan (tenzij je hem zelf verplaatst)
+  const oi=draw.findIndex(i=>i.kind==='orig');
+  draw.forEach((it,idx)=>{if(it.kind==='orig'||it.kind==='bg')return;it.ref.layer=idx<oi?'back':'front';it.ref.z=idx});
+  if(S.draft&&draw.some(i=>i.ref===S.draft))commit();
   const P=S.pages[pn-1];objChanged(P);repaintAll();fillObjForm();syncUI();refreshArrange&&refreshArrange();renderLayers();
 }
-// slepen in de lijst
-$('#ly-list').addEventListener('pointerdown',ev=>{
-  const row=ev.target.closest('.lrow');if(!row||ev.button!==0)return;
+// volledige lijst (bovenste eerst) met 'item' ingevoegd vlak boven 'below' (of onderaan als die er niet is)
+function placeInFull(pn,item,aboveKey){
+  const full=layerList(pn,'arrange').slice().reverse().filter(x=>rowKey(x)!==rowKey(item)&&!(item.ref&&x.ref===item.ref));
+  let at=full.length;
+  if(aboveKey!==undefined){const j=full.findIndex(x=>rowKey(x)===aboveKey);if(j>=0)at=j}
+  full.splice(at,0,item);
+  return full;
+}
+function moveLayer(pn,row,item,targetIndexInShown){
+  // targetIndexInShown: positie in de getoonde lijst (zonder het gesleepte item) waar het moet komen
+  const shown=S.layerRows.filter(x=>rowKey(x)!==rowKey(row||item));
+  const next=shown[targetIndexInShown];   // het item dat onder de nieuwe plek komt
+  pushUndo();
+  if(!item){
+    if(row.kind==='bg')item=liftKey(pn,'x:'+pn+':'+row.ord);else item=row;
+    if(!item)return;
+  }
+  applyLayerOrder(pn,placeInFull(pn,item,next?rowKey(next):undefined));
+}
+// klikken, ▲▼ en slepen in de lijst
+$('#s-layers').addEventListener('pointerdown',ev=>{
+  const rowEl=ev.target.closest('.lrow');if(!rowEl||ev.button!==0)return;
   const pn=S.layerPn,rows=S.layerRows;if(!rows)return;
-  const isSub=row.classList.contains('lsub'),i=+row.dataset.i,r=isSub?null:rows[i];
+  const isSub=rowEl.classList.contains('lsub'),r=isSub?null:rows[+rowEl.dataset.i];
+  const mvb=ev.target.closest('button[data-mv]');
+  if(mvb&&r){
+    ev.preventDefault();
+    const i=rows.indexOf(r),up=mvb.dataset.mv==='up';
+    // ▲: boven het item erboven; ▼: onder het item eronder
+    const shown=rows.filter(x=>x!==r);let t=up?i-1:i+1;
+    if(t<0||t>shown.length)return;
+    moveLayer(pn,r,null,t);return;
+  }
   if(r&&r.kind==='orig')return;
   ev.preventDefault();
-  const sy=ev.clientY;let moving=false,ins=null,line=null;
-  const list=$('#ly-list'),main=[...list.querySelectorAll('.lrow:not(.lsub)')];
+  const list=$('#ly-list'),sy=ev.clientY;let moving=false,ins=null,line=null,scrollT=null;
+  const mains=()=>[...list.querySelectorAll('.lrow')].filter(x=>x!==rowEl);
+  const place=e=>{
+    const ms=mains(),lr=list.getBoundingClientRect();
+    // automatisch scrollen bij de rand
+    if(e.clientY<lr.top+28)list.scrollTop-=12;else if(e.clientY>lr.bottom-28)list.scrollTop+=12;
+    let k=ms.length;for(let j=0;j<ms.length;j++){const rr=ms[j].getBoundingClientRect();if(e.clientY<rr.top+rr.height/2){k=j;break}}
+    ins=k;
+    const y=k<ms.length?ms[k].getBoundingClientRect().top-3:(ms.length?ms[ms.length-1].getBoundingClientRect().bottom+2:lr.top);
+    line.style.top=(y-lr.top+list.scrollTop)+'px';
+    const over=e.clientX>=lr.left-20&&e.clientX<=lr.right+20&&e.clientY>=lr.top-30&&e.clientY<=lr.bottom+30;line.style.display=over?'':'none';if(!over)ins=null;
+  };
   const mv=e=>{
     if(!moving&&Math.abs(e.clientY-sy)<5)return;
-    if(!moving){moving=true;row.classList.add('ldrag');line=document.createElement('div');line.className='lline';list.appendChild(line)}
-    // invoegplaats: tussen twee hoofdrijen
-    let k=main.length;for(let j=0;j<main.length;j++){const rr=main[j].getBoundingClientRect();if(e.clientY<rr.top+rr.height/2){k=j;break}}
-    ins=k;const lr=list.getBoundingClientRect(),ref=main[Math.min(k,main.length-1)].getBoundingClientRect();
-    line.style.top=((k<main.length?ref.top:ref.bottom)-lr.top+list.scrollTop-1)+'px';
+    if(!moving){moving=true;rowEl.classList.add('ldrag');line=document.createElement('div');line.className='lline';list.appendChild(line);document.body.classList.add('ldragging')}
+    place(e);
   };
   const up=()=>{
     window.removeEventListener('pointermove',mv);window.removeEventListener('pointerup',up);
-    row.classList.remove('ldrag');if(line)line.remove();
-    if(!moving){if(isSub)selectLayerKey(row.dataset.okey,pn);else selectLayerRow(r,pn);return}
-    pushUndo();
-    let item=r;
-    if(isSub){   // object uit de pagina-inhoud: krijgt een eigen laag
-      const ord=+row.dataset.okey.split(':')[2],P=S.pages[pn-1],it=objItems(P).find(x=>x.key===row.dataset.okey);if(!it)return;
-      const ed=ensureEd(it);ed.lift=true;item={kind:'x',ref:ed};
-    }
-    const top=rows.filter(x=>x!==r);
-    let pos=ins;const oldIdx=r?rows.indexOf(r):-1;if(r&&oldIdx>=0&&oldIdx<ins)pos--;
-    top.splice(Math.max(0,Math.min(top.length,pos)),0,item);
-    // bij het filter 'Overlappend' zijn niet alle lagen zichtbaar: de rest behoudt zijn volgorde
-    if(S.layerFilter==='overlap'){
-      const full=layerList(pn,'arrange').slice().reverse().filter(x=>x.ref!==item.ref);
-      const shown=new Set(top.map(x=>x.ref||x.kind));
-      const after=top[top.indexOf(item)+1];
-      const at=after?full.findIndex(x=>(x.ref||x.kind)===(after.ref||after.kind)):full.length;
-      full.splice(at<0?full.length:at,0,item);
-      applyLayerOrder(pn,full);
-    }else applyLayerOrder(pn,top);
+    rowEl.classList.remove('ldrag');if(line)line.remove();document.body.classList.remove('ldragging');
+    if(!moving){if(isSub)selectLayerKey(rowEl.dataset.okey,pn);else selectLayerRow(r,pn);return}
+    if(ins==null)return;
+    if(isSub){const it=(pushUndo(),liftKey(pn,rowEl.dataset.okey));if(!it)return;const shown=S.layerRows;const next=shown[ins];applyLayerOrder(pn,placeInFull(pn,it,next?rowKey(next):undefined))}
+    else moveLayer(pn,r,null,ins);
     say('Volgorde van de lagen aangepast.',2500);
   };
   window.addEventListener('pointermove',mv);window.addEventListener('pointerup',up);
