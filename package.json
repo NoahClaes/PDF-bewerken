@@ -1,0 +1,45 @@
+{
+  "name": "pdf-bewerken",
+  "productName": "PDF Bewerken",
+  "version": "1.1.0",
+  "description": "Tekst, lettertypes, afbeeldingen en vormen in PDF-bestanden aanpassen",
+  "author": "PDF Bewerken",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "pack:win": "electron-builder --win dir --x64",
+    "icon:win": "node tools/set-icon.mjs \"dist/win-unpacked/PDF Bewerken.exe\" build/icon.png build/icon.ico",
+    "installer:win": "makensis -DVERSION=%npm_package_version% build/installer.nsi",
+    "dist": "npm run pack:win && npm run icon:win && makensis -DVERSION=$npm_package_version build/installer.nsi"
+  },
+  "build": {
+    "appId": "be.pdfbewerken.app",
+    "productName": "PDF Bewerken",
+    "copyright": "PDF Bewerken",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "fontscan.js",
+      "updater.js",
+      "app/**/*",
+      "build/icon.png"
+    ],
+    "win": {
+      "target": [
+        "dir"
+      ],
+      "icon": "build/icon.png",
+      "signAndEditExecutable": false
+    }
+  },
+  "devDependencies": {
+    "electron": "^38.8.6",
+    "electron-builder": "^26.18.0",
+    "png2icons": "^2.0.1",
+    "resedit": "^2.0.3"
+  },
+  "updateRepo": "NoahClaes/pdf-bewerken"
+}
