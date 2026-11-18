@@ -131,6 +131,28 @@
   .ohit{position:absolute;border-radius:1px;cursor:pointer}
   body.m-obj .ohit:hover{outline:1.5px dashed #ff7a00;background:rgba(255,122,0,.08)}
   .ohit.sel{outline:2px solid #ff7a00;background:rgba(255,122,0,.07);cursor:move}
+  #pmback{position:fixed;inset:0;background:rgba(20,24,32,.45);z-index:80;display:flex;align-items:center;justify-content:center}
+  #pm{background:#fff;border-radius:12px;box-shadow:0 18px 60px rgba(0,0,0,.35);width:min(1100px,96vw);height:min(760px,92vh);display:flex;flex-direction:column}
+  .pmh,.pmf{display:flex;gap:8px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}.pmf{border-bottom:0;border-top:1px solid var(--line)}
+  #pm-grid{flex:1;overflow:auto;padding:16px;display:flex;flex-wrap:wrap;gap:18px;align-content:flex-start;position:relative;background:#f4f5f7}
+  .pmc{width:170px;padding:8px;border-radius:10px;border:2px solid transparent;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.12);position:relative;user-select:none;cursor:pointer}
+  .pmc.sel{border-color:var(--accent);background:#eef3ff}.pmc.drag{opacity:.4}
+  .pmt{height:154px;display:flex;align-items:center;justify-content:center;overflow:hidden}.pmt canvas{box-shadow:0 0 0 1px #d6d9df;transition:transform .15s;max-width:150px;max-height:150px}
+  .pml{text-align:center;font-size:13px;margin-top:6px}
+  .pmb{position:absolute;top:6px;right:6px;display:none;gap:3px}.pmc:hover .pmb{display:flex}.pmb button{padding:2px 7px;font-size:13px;background:#fff}
+  .pmmark{position:absolute;width:4px;background:var(--accent);border-radius:2px;pointer-events:none}
+  .lytabs{display:flex;background:#eef0f4;border-radius:9px;padding:3px;margin-bottom:8px}.lytabs button{flex:1;border:0;background:none;justify-content:center;padding:5px}.lytabs button.on{background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.12);color:inherit}
+  #ly-list{position:relative;max-height:46vh;overflow:auto}
+  .lrow{display:flex;align-items:center;gap:8px;padding:5px 6px;margin:4px 0;border-radius:9px;background:#f1f3f6;border:1.5px solid transparent;cursor:pointer;user-select:none}
+  .lrow:hover{background:#e8ebf1}.lrow.lsel{border-color:#8b5cf6;background:#f3efff}.lrow.lorig{background:#fff;border:1.5px dashed #c7cbd2;cursor:default}
+  .lrow.ldrag{opacity:.45}.lrow.lsub{margin-left:18px;background:#f8f9fb}
+  .lgrip{color:#8a909c;font-size:16px;cursor:grab;width:12px}
+  .lthumb{width:64px;height:40px;border-radius:4px;border:1px solid #e1e4e9;background:#fff;flex:none}
+  .llbl{font-size:12.5px;line-height:1.3;overflow:hidden}.llbl small{display:block;color:var(--muted);font-size:11px}
+  .lline{position:absolute;left:0;right:0;height:3px;background:#8b5cf6;border-radius:2px;pointer-events:none}
+  .lsubt{display:block;font-size:12px;margin:2px 0 2px 18px;color:var(--muted)}
+  .orot{position:absolute;width:20px;height:20px;margin:-10px 0 0 -10px;border-radius:50%;background:#fff;border:2px solid #ff7a00;color:#ff7a00;font:700 12px/16px system-ui;text-align:center;cursor:grab;z-index:8;user-select:none}
+  .orotl{position:absolute;width:0;border-left:1.5px solid #ff7a00;transform-origin:0 0;pointer-events:none;z-index:7}
   .oh{position:absolute;width:11px;height:11px;margin:-5.5px 0 0 -5.5px;background:#fff;border:2px solid #ff7a00;border-radius:2px;z-index:7}
   .osvg{position:absolute;left:0;top:0;pointer-events:none;overflow:visible}
   .oimg{position:absolute;pointer-events:none;max-width:none}
@@ -158,11 +180,13 @@
   <input id="file" type="file" accept="application/pdf,.pdf" hidden>
   <span id="fname">Nog geen bestand</span>
   <span id="savestat" title="Je bestand en aanpassingen worden automatisch in deze browser bewaard"></span>
-  <button id="libbtn" title="Mijn bestanden: eerder geopende PDF's met je aanpassingen">Mijn bestanden</button>
+  <button id="libbtn" title="Mijn bestanden: eerder geopende PDF's met je aanpassingen">Bestanden</button>
   <span class="sep"></span>
-  <button id="t-edit" class="on" title="Klik op bestaande tekst om hem aan te passen" disabled>Tekst aanpassen</button>
-  <button id="t-add" title="Klik op de pagina om nieuwe tekst te plaatsen" disabled>Tekst toevoegen</button>
+  <button id="t-edit" class="on" title="Klik op bestaande tekst om hem aan te passen" disabled>Tekst</button>
+  <button id="t-add" title="Klik op de pagina om nieuwe tekst te plaatsen" disabled>+ Tekst</button>
   <button id="t-cover" title="Sleep een vak om iets weg te wissen" disabled>Wegwissen</button>
+  <button id="t-pages" title="Paginabeheer: pagina's samenvoegen, splitsen, draaien, verwijderen of ordenen" disabled>Pagina's</button>
+  <button id="t-layers" title="Lagen: overzicht van alles op de pagina; sleep om te schikken" disabled>Lagen</button>
   <button id="t-obj" title="Afbeeldingen, logo's, vormen en lijnen selecteren, verplaatsen, vergroten, vervangen of verwijderen. Ook nieuwe afbeeldingen en vormen invoegen." disabled>Objecten</button>
   <span class="sep"></span>
   <button id="undo" disabled title="Ongedaan maken (Ctrl+Z)" aria-label="Ongedaan maken">↶</button>
@@ -260,6 +284,13 @@
         <li><b>Symbolen</b> (✓ ★ → €): knop <b>Ω</b> linksboven.</li>
       </ul>
     </div>
+    <div id="s-layers" class="sec" hidden>
+      <h3 style="justify-content:space-between"><span id="ly-title">Lagen</span><button id="ly-close" title="Sluiten" style="padding:2px 8px">✕</button></h3>
+      <div class="lytabs"><button id="ly-all" class="on">Alles</button><button id="ly-ov">Overlappend</button></div>
+      <div id="ly-list"></div>
+      <p class="muted" id="ly-hint" style="margin:6px 0 0;font-size:12px"></p>
+      <hr>
+    </div>
     <div id="s-ins" class="sec" hidden>
       <h3>Objecten<i class="info" tabindex="0" data-tip="Klik op een afbeelding, logo, vorm of lijn om hem te selecteren. Sleep hem om te verplaatsen, sleep een hoekje om te vergroten (Shift: verhouding loslaten of vastzetten).&#10;Een logo bestaat vaak uit veel stukjes: sleep een kader eromheen om alles tegelijk te selecteren. Shift+klik voegt een object toe aan de selectie.&#10;Pijltjestoetsen: 0,1 pt (met Shift 1 pt). Delete: verwijderen. Esc: selectie opheffen.&#10;&#10;Het origineel blijft scherp: de editor past de tekenopdrachten in de PDF zelf aan.">i</i></h3>
       <p class="muted" style="margin:0">Klik op een afbeelding, logo, vorm of lijn in de pagina. Sleep een kader om meerdere stukjes tegelijk te selecteren (bv. een logo).</p>
@@ -277,6 +308,7 @@
       <p class="muted" id="o-desc" style="margin:0 0 8px"></p>
       <div class="row"><div><span class="muted sm">X (pt)</span><input id="o-x" type="number" step="0.5"></div><div><span class="muted sm">Y (pt)</span><input id="o-y" type="number" step="0.5"></div></div>
       <div class="row" style="margin-top:4px"><div><span class="muted sm">Breedte (pt)</span><input id="o-w" type="number" step="0.5" min="0.5"></div><div><span class="muted sm">Hoogte (pt)</span><input id="o-h" type="number" step="0.5" min="0"></div></div>
+      <div class="row" style="margin-top:4px;align-items:end"><div><span class="muted sm">Draaiing (°)</span><input id="o-rot" type="number" step="1" min="-360" max="360"></div><div style="display:flex;gap:4px"><button id="o-rl" title="90° naar links draaien" style="padding:7px 10px">↺</button><button id="o-rr" title="90° naar rechts draaien" style="padding:7px 10px">↻</button><button id="o-r0" title="Draaiing weghalen" style="padding:7px 10px">0°</button></div></div>
       <label style="display:flex;gap:6px;align-items:center;white-space:normal;margin-top:8px"><input id="o-ratio" type="checkbox" style="width:auto;margin:0"> Verhouding behouden</label>
       <div id="o-colors">
         <div class="row" style="margin-top:6px"><div id="o-fillbox"><span class="muted sm">Vulkleur</span><input id="o-fill" type="color"></div><div id="o-strokebox"><span class="muted sm">Lijnkleur</span><input id="o-stroke" type="color"></div></div>
@@ -371,6 +403,17 @@
 </div></div>
 <div id="toast"></div>
 <div id="sympanel" hidden></div>
+<div id="pmback" hidden><div id="pm" role="dialog" aria-label="Paginabeheer">
+  <div class="pmh"><b style="font-size:16px">Pagina's</b><span class="muted" id="pm-info"></span><span style="flex:1"></span>
+    <label class="btn" for="pm-file" title="Pagina's uit een andere PDF toevoegen (achter de selectie)">+ PDF toevoegen…</label><input id="pm-file" type="file" accept="application/pdf,.pdf" multiple hidden>
+    <button id="pm-rl" title="Selectie 90° naar links draaien">↺</button><button id="pm-rr" title="Selectie 90° naar rechts draaien">↻</button>
+    <button id="pm-del" title="Selectie verwijderen (Delete)">Verwijderen</button>
+    <button id="pm-extract" title="De geselecteerde pagina's als nieuwe PDF opslaan">Selectie opslaan als PDF…</button>
+    <button id="pm-split" title="Elke pagina (of elke geselecteerde pagina) als apart PDF-bestand opslaan">Splitsen…</button>
+  </div>
+  <div id="pm-grid"></div>
+  <div class="pmf"><span class="muted">Klik om te selecteren, Ctrl/Shift+klik voor meer. Sleep om de volgorde te veranderen. Delete = verwijderen.</span><span style="flex:1"></span><button id="pm-cancel">Annuleren</button><button id="pm-ok" class="primary">Toepassen</button></div>
+</div></div>
 
 <script>
 const $=s=>document.querySelector(s);
@@ -407,7 +450,7 @@ function scheduleSave(force){
     if(!force&&json===S.lastSaved)return;
     try{
       const used={};for(const o of S.objs)if(o.img&&S.blobs[o.img])used[o.img]=S.blobs[o.img];
-      for(const u of S.undo.concat(S.redo))for(const m of String(u).matchAll(/"img":"(b[0-9a-z]+)"/g))if(S.blobs[m[1]])used[m[1]]=S.blobs[m[1]];
+      for(const u of S.undo.concat(S.redo))for(const m of String(typeof u==='object'?u.state:u).matchAll(/"img":"(b[0-9a-z]+)"/g))if(S.blobs[m[1]])used[m[1]]=S.blobs[m[1]];
       await DDB.put({id:S.docId,name:S.name,bytes:S.bytes,edits:S.edits,objs:S.objs,blobs:used,uid:S.uid,updated:Date.now(),sigfix:true});
       S.lastSaved=json;saveState('✓ Bewaard');renderLib();
     }catch(e){S.noSaveDocs=true;saveState('Niet bewaard (browser blokkeert opslag)',true)}
@@ -447,17 +490,21 @@ async function openFile(file){
   catch(e){const m=(e&&e.name==='PasswordException')?'Dit PDF is met een wachtwoord beveiligd. Haal eerst de beveiliging weg.':'Kon dit bestand niet openen: '+(e.message||e);say(m,7000)}
 }
 async function openBytes(buf,name,opt){
+  opt=opt||{};
   if(S.draft)commit();
   try{
     say('PDF laden…',60000);
+    const id=opt.keepId||(opt.rec&&opt.rec.id)||docIdOf(buf,name);
+    let rec=opt.state?null:(opt.rec||null);
+    if(!rec&&!opt.state){try{rec=await DDB.get(id)}catch(e){}}
+    // al eerder bewerkt (bv. pagina's verplaatst)? dan de bewaarde versie gebruiken
+    if(rec&&rec.bytes&&!opt.state)buf=new Uint8Array(rec.bytes);
+    buf=await normalizeRotation(buf);
     const doc=await pdfjsLib.getDocument({data:buf.slice(0),...DOCOPTS}).promise;
-    const id=docIdOf(buf,name);
-    let rec=opt.rec||null;
-    if(!rec){try{rec=await DDB.get(id)}catch(e){}}
     try{await S.fontsReady}catch(e){}
-    S.bytes=buf;S.name=name;S.doc=doc;S.docId=id;S.edits=(rec&&rec.edits)||[];S.undo=[];S.redo=[];S.draft=null;
+    S.bytes=buf;S.name=name;S.doc=doc;S.docId=id;S.edits=opt.state?opt.state.e:(rec&&rec.edits)||[];S.undo=opt.keepStacks?opt.keepStacks.undo:[];S.redo=opt.keepStacks?opt.keepStacks.redo:[];S.draft=null;
     S.fonts=S.fonts.filter(f=>f.src!=='pdf');fontsChanged();rcache.clear();calCache.clear();
-    S.objs=(rec&&rec.objs)||[];S.blobs=(rec&&rec.blobs)||{};S.osel=[];S.opage=0;S.odrag=null;
+    S.objs=opt.state?opt.state.o:(rec&&rec.objs)||[];S.blobs=opt.state?(opt.state.blobs||{}):(rec&&rec.blobs)||{};S.osel=[];S.opage=0;S.odrag=null;
     S.plib=null;try{S.plib=await PDFLib.PDFDocument.load(buf,{ignoreEncryption:true,updateMetadata:false})}catch(e){console.warn('objecten niet beschikbaar',e)}
     let recovered=false;
     if(rec&&!rec.sigfix){     // eerdere herstelpoging liet regelafbrekingen los: begin opnieuw vanuit de veiligheidskopie
@@ -493,11 +540,11 @@ async function openBytes(buf,name,opt){
     S.fontNote=fontNote;S.recovered=recovered;
     for(const e of S.edits.concat(S.objs))if(e.id>=S.uid)S.uid=e.id+1;
     repaintAll();refreshObjs();
-    for(const id of ['t-edit','t-add','t-cover','t-obj','zoom','dl'])$('#'+id).disabled=false;
+    for(const id of ['t-edit','t-add','t-cover','t-obj','t-layers','t-pages','zoom','dl'])$('#'+id).disabled=false;
     setMode('edit');syncUI();
     toast.style.display='none';
     listDocFonts(true);
-    if(S.edits.length||S.objs.length){
+    if((S.edits.length||S.objs.length)&&!opt.quiet){
       setTimeout(()=>{
         say('Je eerdere aanpassingen zijn teruggezet ('+(S.edits.length+S.objs.length)+').'+(S.recovered?' De vorige (beschadigde) toestand staat onder Mijn bestanden als back-up 2.':'')+esc(S.fontNote||'')+' <a href="#" id="restart">Opnieuw beginnen</a>',S.fontNote?14000:9000);
         const a=$('#restart');if(a)a.onclick=ev=>{ev.preventDefault();pushUndo();S.edits=[];S.objs=[];S.osel=[];repaintAll();refreshObjs();fillObjForm();syncUI();toast.style.display='none'};
@@ -2324,6 +2371,7 @@ function doUndo(){
   if(S.draft&&dhGo(-1))return;                                   // eerst: één stap terug binnen het open blok
   if(S.draft&&!S.draftExisting){cancelDraft();syncUI();return}   // niets meer terug te draaien: blok sluiten
   if(!S.undo.length)return;
+  if(typeof S.undo[S.undo.length-1]==='object'){swapDocState(S.undo.pop(),S.redo);return}
   S.redo.push(snapState());
   loadState(S.undo.pop());S.draft=null;S.osel=S.osel.filter(k=>objItemByKey(k));fillForm();repaintAll();refreshObjs();fillObjForm();syncUI();
 }
@@ -2331,6 +2379,7 @@ function doRedo(){
   if(S.group)S.group=null;
   if(S.draft&&dhGo(1))return;
   if(!S.redo.length)return;
+  if(typeof S.redo[S.redo.length-1]==='object'){swapDocState(S.redo.pop(),S.undo);return}
   S.undo.push(snapState());
   loadState(S.redo.pop());S.draft=null;S.osel=S.osel.filter(k=>objItemByKey(k));fillForm();repaintAll();refreshObjs();fillObjForm();syncUI();
 }
@@ -2343,7 +2392,7 @@ document.addEventListener('keydown',e=>{
   if(k==='z'&&!e.shiftKey){e.preventDefault();doUndo()}
   else if(k==='y'||(k==='z'&&e.shiftKey)){e.preventDefault();doRedo()}
 });
-function syncUI(){scheduleSave();
+function syncUI(){scheduleSave();if(typeof layersSoon==='function')layersSoon();
   $('#undo').disabled=!(S.undo.length||(S.draft&&(DH.i>0||!S.draftExisting)));$('#redo').disabled=!(S.redo.length||(S.draft&&DH.i<DH.h.length-1))}
 
 function setMode(m){
@@ -2554,7 +2603,7 @@ async function buildPdfBytes(){
 // laagvolgorde op een pagina: [achter de tekst] , de oorspronkelijke inhoud , [voor de tekst]
 const hashOf=o=>JSON.stringify(o,(k,v)=>k&&k[0]==='_'?undefined:v);
 const exMoved=o=>{const a=o.b0,b=o.b;return !!(a&&b&&(Math.abs(a.x-b.x)>1e-3||Math.abs(a.y-b.y)>1e-3||Math.abs(a.w-b.w)>1e-3||Math.abs(a.h-b.h)>1e-3))};
-const isLiftedEx=o=>!!(o.lift||o.img||exMoved(o));
+const isLiftedEx=o=>!!(o.lift||o.img||o.rot||exMoved(o));
 const zDef=(k,r)=>r.z!=null?r.z:(k==='x'?5e5:k==='n'?1e6:2e6)+(r.id||0);
 function layerList(pn,mode){   // mode: 'export' | 'preview' (zonder open tekstblok) | 'arrange' (met open tekstblok)
   const L=[],dr=S.draft&&S.draft.page===pn?S.draft:null;
@@ -3319,11 +3368,14 @@ function newObjEl(o,P){
   const sc=S.scale,b=nbox(o.b);
   if(o.t==='img'){
     const im=document.createElement('img');im.className='oimg';im.src=blobUrl(o.img);im.draggable=false;
-    Object.assign(im.style,{left:b.x*sc+'px',top:b.y*sc+'px',width:b.w*sc+'px',height:b.h*sc+'px'});return im;
+    Object.assign(im.style,{left:b.x*sc+'px',top:b.y*sc+'px',width:b.w*sc+'px',height:b.h*sc+'px'});
+    if(o.rot)Object.assign(im.style,{transform:`rotate(${o.rot}deg)`,transformOrigin:'50% 50%'});
+    return im;
   }
   const NS='http://www.w3.org/2000/svg',svg=document.createElementNS(NS,'svg');
   svg.setAttribute('class','osvg');svg.setAttribute('width',P.wPt*sc);svg.setAttribute('height',P.hPt*sc);svg.setAttribute('viewBox',`0 0 ${P.wPt} ${P.hPt}`);
-  const mk=(tag,at)=>{const el=document.createElementNS(NS,tag);for(const k in at)el.setAttribute(k,at[k]);svg.appendChild(el);return el};
+  const grp=document.createElementNS(NS,'g');if(o.rot)grp.setAttribute('transform',`rotate(${o.rot} ${b.x+b.w/2} ${b.y+b.h/2})`);svg.appendChild(grp);
+  const mk=(tag,at)=>{const el=document.createElementNS(NS,tag);for(const k in at)el.setAttribute(k,at[k]);grp.appendChild(el);return el};
   const fill=o.fill&&!o.nofill?o.fill:'none',stroke=o.stroke&&o.lw>0?o.stroke:'none',sw=o.lw||0;
   if(o.t==='rect'||o.t==='round'){const r=o.t==='round'?roundR(o):0;mk('rect',{x:b.x,y:b.y,width:b.w,height:b.h,rx:r,ry:r,fill,stroke,'stroke-width':sw})}
   else if(o.t==='ell')mk('ellipse',{cx:b.x+b.w/2,cy:b.y+b.h/2,rx:b.w/2,ry:b.h/2,fill,stroke,'stroke-width':sw});
@@ -3334,18 +3386,32 @@ function newObjEl(o,P){
 function paintObjLayer(P){
   const sc=S.scale,items=objItems(P).sort((a,b)=>nbox(b.b).w*nbox(b.b).h-nbox(a.b).w*nbox(a.b).h);
   const sel=new Set(S.opage===P.n?S.osel:[]);
-  if(S.odrag&&S.odrag.page===P.n)for(const [k,g] of S.odrag.ghosts){const it=items.find(i=>i.key===k);if(!it)continue;const b=nbox(it.b);Object.assign(g.style,{left:b.x*sc+'px',top:b.y*sc+'px',width:b.w*sc+'px',height:b.h*sc+'px'});P.ov.appendChild(g)}
+  if(S.odrag&&S.odrag.page===P.n)for(const [k,g] of S.odrag.ghosts){const it=items.find(i=>i.key===k);if(!it)continue;const b=aabb(nbox(it.b),rotOf(it));Object.assign(g.style,{left:b.x*sc+'px',top:b.y*sc+'px',width:b.w*sc+'px',height:b.h*sc+'px'});P.ov.appendChild(g)}
   for(const it of items){
     const b=nbox(it.b),d=document.createElement('div');d.className='ohit'+(sel.has(it.key)?' sel':'');d.dataset.okey=it.key;
     const pw=Math.max(b.w*sc,8),ph=Math.max(b.h*sc,8);
     Object.assign(d.style,{left:(b.x*sc-(pw-b.w*sc)/2)+'px',top:(b.y*sc-(ph-b.h*sc)/2)+'px',width:pw+'px',height:ph+'px'});
+    if(rotOf(it))Object.assign(d.style,{transform:`rotate(${rotOf(it)}deg)`,transformOrigin:'50% 50%'});
     d.title=OLABEL[it.t]||'Object';
     P.ov.appendChild(d);
   }
   const si=items.filter(i=>sel.has(i.key));
   if(si.length){
     const H=(x,y,h,cur)=>{const e=document.createElement('div');e.className='oh';e.dataset.h=h;e.style.left=x*sc+'px';e.style.top=y*sc+'px';e.style.cursor=cur;P.ov.appendChild(e)};
-    if(si.length===1&&isLineObj(si[0])){const b=si[0].b;H(b.x,b.y,'p1','crosshair');H(b.x+b.w,b.y+b.h,'p2','crosshair')}
+    if(si.length===1&&isLineObj(si[0])&&!rotOf(si[0])){const b=si[0].b;H(b.x,b.y,'p1','crosshair');H(b.x+b.w,b.y+b.h,'p2','crosshair')}
+    else if(si.length===1){
+      // één object: handvatten draaien mee, plus het draaihandvat erboven
+      const it=si[0],b=nbox(it.b),deg=rotOf(it),cx=b.x+b.w/2,cy=b.y+b.h/2,r=deg*Math.PI/180,cs=Math.cos(r),sn=Math.sin(r);
+      const R=(x,y)=>{const dx=x-cx,dy=y-cy;return [cx+dx*cs-dy*sn,cy+dx*sn+dy*cs]};
+      const x0=b.x,y0=b.y,x1=b.x+b.w,y1=b.y+b.h,xm=cx,ym=cy;
+      const isLine=isLineObj(it);
+      if(!isLine)for(const [x,y,h,c] of [[x0,y0,'nw','nwse-resize'],[xm,y0,'n','ns-resize'],[x1,y0,'ne','nesw-resize'],[x1,ym,'e','ew-resize'],[x1,y1,'se','nwse-resize'],[xm,y1,'s','ns-resize'],[x0,y1,'sw','nesw-resize'],[x0,ym,'w','ew-resize']]){const p=R(x,y);H(p[0],p[1],h,c)}
+      const top=R(xm,y0-26/sc),stem=R(xm,y0);
+      const ln=document.createElement('div');ln.className='orotl';const len=Math.hypot(top[0]-stem[0],top[1]-stem[1])*sc;
+      Object.assign(ln.style,{left:stem[0]*sc+'px',top:stem[1]*sc+'px',height:len+'px',transform:`rotate(${deg+180}deg)`});P.ov.appendChild(ln);
+      const rh=document.createElement('div');rh.className='orot';rh.dataset.h='rot';rh.title='Sleep om te draaien (Shift: per 15°)';rh.textContent='⟳';
+      Object.assign(rh.style,{left:top[0]*sc+'px',top:top[1]*sc+'px'});P.ov.appendChild(rh);
+    }
     else{
       const u=unionBox(si.map(i=>nbox(i.b))),x0=u.x,y0=u.y,x1=u.x+u.w,y1=u.y+u.h,xm=(x0+x1)/2,ym=(y0+y1)/2;
       H(x0,y0,'nw','nwse-resize');H(xm,y0,'n','ns-resize');H(x1,y0,'ne','nesw-resize');H(x1,ym,'e','ew-resize');
@@ -3353,12 +3419,18 @@ function paintObjLayer(P){
     }
   }
 }
+// draaiing (graden, met de klok mee) rond het midden van het vak
+const rotOf=it=>(it&&it.ed&&+it.ed.rot)||0;
+function rotPts(b,deg){const cx=b.x+b.w/2,cy=b.y+b.h/2,r=deg*Math.PI/180,cs=Math.cos(r),sn=Math.sin(r);return [[b.x,b.y],[b.x+b.w,b.y],[b.x+b.w,b.y+b.h],[b.x,b.y+b.h]].map(([x,y])=>{const dx=x-cx,dy=y-cy;return [cx+dx*cs-dy*sn,cy+dx*sn+dy*cs]})}
+function aabb(b,deg){if(!deg)return b;const p=rotPts(b,deg),xs=p.map(q=>q[0]),ys=p.map(q=>q[1]);return {x:Math.min(...xs),y:Math.min(...ys),w:Math.max(...xs)-Math.min(...xs),h:Math.max(...ys)-Math.min(...ys)}}
+// draaiing als PDF-matrix (pagina-coördinaten, y omhoog)
+function rotM(P,b,deg){const r=deg*Math.PI/180,cs=Math.cos(r),sn=Math.sin(r),n=nbox(b),CX=P.x0+n.x+n.w/2,CY=P.y1-(n.y+n.h/2);const a=cs,bb=-sn,c=sn,d=cs;return [a,bb,c,d,CX-a*CX-c*CY,CY-bb*CX-d*CY]}
 const unionBox=bs=>{const x0=Math.min(...bs.map(b=>b.x)),y0=Math.min(...bs.map(b=>b.y)),x1=Math.max(...bs.map(b=>b.x+b.w)),y1=Math.max(...bs.map(b=>b.y+b.h));return {x:x0,y:y0,w:x1-x0,h:y1-y0}};
 function cropCanvas(P,b){
   const d=P.dpr,sc=S.scale,x=Math.max(0,Math.floor(b.x*sc*d)),y=Math.max(0,Math.floor(b.y*sc*d)),w=Math.max(1,Math.ceil(Math.max(b.w,1)*sc*d)),h=Math.max(1,Math.ceil(Math.max(b.h,1)*sc*d));
   const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(P.cv,x,y,w,h,0,0,w,h);c.className='ghost';return c;
 }
-function afterObjSel(P){if(P)S.opage=P.n;repaintAll();fillObjForm()}
+function afterObjSel(P){if(P)S.opage=P.n;repaintAll();fillObjForm();layersSoon()}
 function objChanged(P){
   for(const Q of (P?[P]:S.pages)){paintOverlay(Q);clearTimeout(Q.rt);Q.rt=setTimeout(()=>rerenderBase(Q),120)}
   fillObjForm();syncUI();
@@ -3385,7 +3457,7 @@ function startObjMove(ev,P){
     if(!moved){
       moved=true;pushUndo();
       const ghosts=new Map();
-      items.forEach(it=>{if(!it.isNew)ghosts.set(it.key,cropCanvas(P,nbox(it.b)));ensureObjEd(it)});
+      items.forEach(it=>{if(!it.isNew)ghosts.set(it.key,cropCanvas(P,aabb(nbox(it.b),rotOf(it))));ensureObjEd(it)});
       S.odrag={page:P.n,ghosts};
     }
     if(e.shiftKey){if(Math.abs(dx)>Math.abs(dy))dy=0;else dx=0}
@@ -3410,7 +3482,24 @@ function objSnapTargets(P,skip){
   return {xs,ys};
 }
 const keepsRatio=it=>it.t==='image'||it.t==='img'||it.t==='form';
+function startObjRotate(ev,P){
+  ev.preventDefault();ev.stopPropagation();
+  const it=selItems()[0];if(!it)return;
+  const r=P.ov.getBoundingClientRect(),b=nbox(it.b),cx=r.left+(b.x+b.w/2)*S.scale,cy=r.top+(b.y+b.h/2)*S.scale;
+  const a0=Math.atan2(ev.clientY-cy,ev.clientX-cx)*180/Math.PI,d0=rotOf(it);let moved=false;
+  const mv=e=>{
+    if(!moved){moved=true;pushUndo();ensureObjEd(it)}
+    let d=d0+Math.atan2(e.clientY-cy,e.clientX-cx)*180/Math.PI-a0;
+    if(e.shiftKey)d=Math.round(d/15)*15;else{const n=Math.round(d/90)*90;if(Math.abs(d-n)<4)d=n}
+    d=((Math.round(d*10)/10)%360+360)%360;
+    it.ed.rot=d;
+    paintOverlay(P);fillObjForm();$('#o-hint').textContent='Draaiing: '+String(d).replace('.',',')+'°';
+  };
+  const up=()=>{window.removeEventListener('pointermove',mv);window.removeEventListener('pointerup',up);if(moved)objChanged(P)};
+  window.addEventListener('pointermove',mv);window.addEventListener('pointerup',up);
+}
 function startObjResize(ev,P,h){
+  if(h==='rot'){startObjRotate(ev,P);return}
   ev.preventDefault();ev.stopPropagation();
   const sc=S.scale,sx=ev.clientX,sy=ev.clientY,items=selItems();if(!items.length)return;
   const orig=items.map(it=>({...it.b})),u=unionBox(orig.map(nbox));let moved=false;
@@ -3419,6 +3508,18 @@ function startObjResize(ev,P,h){
     const dx=(e.clientX-sx)/sc,dy=(e.clientY-sy)/sc;
     if(!moved&&Math.hypot(dx,dy)*sc<2)return;
     if(!moved){moved=true;pushUndo();items.forEach(ensureObjEd)}
+    if(items.length===1&&rotOf(items[0])&&h!=='p1'&&h!=='p2'){
+      // gedraaid: rekenen in de richting van het object zelf
+      const deg=rotOf(items[0]),r=deg*Math.PI/180,cs=Math.cos(r),sn=Math.sin(r),o=nbox(orig[0]);
+      const dxl=dx*cs+dy*sn,dyl=-dx*sn+dy*cs;
+      let u0=-o.w/2,u1=o.w/2,v0=-o.h/2,v1=o.h/2;
+      if(h.includes('w'))u0+=dxl;if(h.includes('e'))u1+=dxl;if(h.includes('n'))v0+=dyl;if(h.includes('s'))v1+=dyl;
+      if((ratio0!==e.shiftKey)&&h.length===2&&o.w>0&&o.h>0){const s=Math.max((u1-u0)/o.w,(v1-v0)/o.h);if(h.includes('w'))u0=u1-o.w*s;else u1=u0+o.w*s;if(h.includes('n'))v0=v1-o.h*s;else v1=v0+o.h*s}
+      if(u1-u0<1){if(h.includes('w'))u0=u1-1;else u1=u0+1}if(v1-v0<0.5){if(h.includes('n'))v0=v1-0.5;else v1=v0+0.5}
+      const cu=(u0+u1)/2,cv=(v0+v1)/2,ncx=o.x+o.w/2+cu*cs-cv*sn,ncy=o.y+o.h/2+cu*sn+cv*cs,w=u1-u0,hh=v1-v0;
+      const bb=items[0].ed.b;bb.x=ncx-w/2;bb.y=ncy-hh/2;bb.w=w;bb.h=hh;
+      paintOverlay(P);fillObjForm();return;
+    }
     if(h==='p1'||h==='p2'){const b=items[0].ed.b,o=orig[0];if(h==='p1'){b.x=o.x+dx;b.y=o.y+dy;b.w=o.w-dx;b.h=o.h-dy}else{b.w=o.w+dx;b.h=o.h+dy}
       if(e.shiftKey){if(Math.abs(b.w)>Math.abs(b.h)*2.4){if(h==='p1')b.y=o.y+o.h;b.h=h==='p1'?0:0;if(h==='p1'){b.h=o.y+o.h-b.y}}else if(Math.abs(b.h)>Math.abs(b.w)*2.4){if(h==='p1'){b.x=o.x+o.w;b.w=0}else b.w=0}}
       paintOverlay(P);fillObjForm();return}
@@ -3492,6 +3593,7 @@ function fillObjForm(){
   $('#o-title').textContent=one?(OLABEL[one.t]||'Object'):items.length+' objecten geselecteerd';
   const set=(id,v)=>{const el=$('#'+id);if(document.activeElement!==el)el.value=v};
   set('o-x',r1(u.x));set('o-y',r1(u.y));set('o-w',r1(u.w));set('o-h',r1(u.h));
+  {const rs=[...new Set(items.map(i=>rotOf(i)))];set('o-rot',rs.length===1?String(rs[0]):'')}
   if(!S.oratioTouched)$('#o-ratio').checked=items.every(keepsRatio);
   // kleuren: alleen bij vormen
   const shapes=items.filter(i=>i.t==='path'||['rect','round','ell','line','arrow'].includes(i.t));
@@ -3528,6 +3630,13 @@ for(const id of ['o-x','o-y','o-w','o-h'])$('#'+id).addEventListener('change',()
   applyBox(nb);
 });
 $('#o-ratio').addEventListener('change',()=>{S.oratioTouched=true});
+function setRot(fn){
+  const items=selItems();if(!items.length)return;pushUndo();
+  for(const it of items){const ed=ensureObjEd(it);let d=fn(rotOf(it));d=((Math.round(d*10)/10)%360+360)%360;ed.rot=d}
+  objChanged(items[0].P);
+}
+$('#o-rot').addEventListener('change',()=>{const v=parseFloat($('#o-rot').value);if(!isNaN(v))setRot(()=>v)});
+$('#o-rl').onclick=()=>setRot(d=>d-90);$('#o-rr').onclick=()=>setRot(d=>d+90);$('#o-r0').onclick=()=>setRot(()=>0);
 const oUndo=tag=>{const now=Date.now();if(!(S.otag===tag&&now-S.otime<1500))pushUndo();S.otag=tag;S.otime=now};
 const setShapeProp=(k,v)=>{
   const items=selItems();if(!items.length)return;oUndo(k);
@@ -3628,7 +3737,8 @@ async function objOpsFor(n,pdf,page){
     if(o.del)op.del=true;
     else{
       const a=o.b0,b=o.b;
-      if(Math.abs(a.x-b.x)>1e-3||Math.abs(a.y-b.y)>1e-3||Math.abs(a.w-b.w)>1e-3||Math.abs(a.h-b.h)>1e-3)op.M=boxT(P,a,b);
+      if(Math.abs(a.x-b.x)>1e-3||Math.abs(a.y-b.y)>1e-3||Math.abs(a.w-b.w)>1e-3||Math.abs(a.h-b.h)>1e-3||o.rot)op.M=boxT(P,a,b);
+      if(o.rot)op.M=mmul(op.M,rotM(P,b,o.rot));
       if(o.fill)op.fill=o.fill;if(o.stroke)op.stroke=o.stroke;if(o.lw!=null)op.lw=o.lw;if(o.nofill)op.nofill=true;if(o.lift)op.lift=true;
       if(o.img){
         // de nieuwe afbeelding vult het oude vak; het verschil in vorm zit in de verplaatsing
@@ -3661,13 +3771,19 @@ async function rerenderBase(P){
     if(my!==P.rseq||!document.body.contains(P.cv)||rs!==S.scale)return;
     if(P.cv.width!==off.width||P.cv.height!==off.height){P.cv.width=off.width;P.cv.height=off.height}
     P.ctx.clearRect(0,0,P.cv.width,P.cv.height);P.ctx.drawImage(off,0,0);
-    P.rmOK=key?P.rmNext:null;P.inCanvas=key?P.canvasNext:null;paintOverlay(P);
+    P.rmOK=key?P.rmNext:null;P.inCanvas=key?P.canvasNext:null;paintOverlay(P);layersSoon();
     if(tmp)setTimeout(()=>{try{tmp.destroy()}catch(e){}},0);
   }catch(e){console.warn('voorbeeld mislukt',e);P.osig=null}
 }
 function refreshObjs(){for(const P of S.pages)rerenderBase(P)}
 // ---- downloaden: nieuwe objecten tekenen ----
 async function drawNewObj(pdf,page,P,o){
+  if(o.rot){
+    const M=rotM(P,o.b,o.rot);
+    page.pushOperators(PDFLib.pushGraphicsState(),PDFLib.concatTransformationMatrix(...M));
+    try{await drawNewObj(pdf,page,P,{...o,rot:0})}finally{page.pushOperators(PDFLib.popGraphicsState())}
+    return;
+  }
   const {rgb}=PDFLib,col=h=>{const [r,g,b]=rgbOf(h);return rgb(r/255,g/255,b/255)};
   const b=nbox(o.b),X=P.x0+b.x,Yt=P.y1-b.y;
   if(o.t==='img'){const im=await embedBlob(pdf,o.img);page.drawImage(im,{x:X,y:Yt-b.h,width:b.w,height:b.h});return}
@@ -3885,7 +4001,379 @@ const RUNKEYS=['font','bold','italic','underline','strike','color'];
 function painterApplyBlock(d,cap){Object.assign(d,cap);d.rn=null;d.userFont=true;d._segs=null;d.matchInfo={warn:false,t:'Opmaak overgenomen'}}
 function painterApplyRange(d,cap){const o={};for(const k of RUNKEYS)o[k]=cap[k];setRangeStyle(d,o);d.userFont=true}
 
-window.__test={setZoom,arrange,layerList,painterCapture,draftLayout,indexAt,caretXY,setSel,openAt,finishDraft,objItems,selItems,scanPageObjects,refreshObjs,deleteSelObjs,nudgeObjs,applyBox,addNewObj,insertSymbol,objItemByKey,fillObjForm,ensureGlyphs,runsFor,chainOf,fontById,fkOf,styleTexts,makeGroup,endGroup,nudgeGroup,itemsIn,rangeSelect,sigOf,calFor,hsOf,paragraphAround,paraBreak,estWord,fillFromLines,expandParagraph,DH,doUndo,doRedo,nudge,applyGap,updateGapFields,neighborGaps,styleOf,STYLEKEYS,openParDialog,computeGaps,S,buildPdfBytes,startDraftFromLine,extendDraft,commit,setMode,resolveFont,parseFontName,applyAutoFont,addUserFontFile,layoutBlock,measurer,liveUpdate,toggleStyle,norm};
+// =================== LAGENPANEEL (zoals in Canva): alles op de pagina, bovenste laag bovenaan; slepen om te schikken ===================
+S.showLayers=false;S.layerFilter='all';
+function layerPage(){
+  if(S.mode==='obj'&&S.osel.length&&S.opage)return S.opage;
+  if(S.draft)return S.draft.page;
+  if(!S.pages.length)return 0;
+  try{return visibleCenter().P.n}catch(e){return 1}
+}
+function layerSelRefs(){try{return new Set(arrangeTargets().map(t=>t.ref))}catch(e){return new Set()}}
+function thumbOf(P,box){
+  const c=document.createElement('canvas'),W=64,Hh=40;c.width=W*2;c.height=Hh*2;c.className='lthumb';
+  const ctx=c.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,c.width,c.height);
+  if(!box||!P||!P.cv)return c;
+  const d=P.dpr,sc=S.scale,pad=2;
+  const sx=Math.max(0,(box.x-pad)*sc*d),sy=Math.max(0,(box.y-pad)*sc*d),sw=Math.max(1,(box.w+2*pad)*sc*d),sh=Math.max(1,(box.h+2*pad)*sc*d);
+  const k=Math.min(c.width/sw,c.height/sh),tw=sw*k,th=sh*k;
+  try{ctx.drawImage(P.cv,sx,sy,sw,sh,(c.width-tw)/2,(c.height-th)/2,tw,th)}catch(e){}
+  return c;
+}
+// toegevoegde vormen en afbeeldingen los tekenen (zonder wat erboven of eronder ligt)
+const thumbImgs=new Map();
+function thumbNew(o){
+  const c=document.createElement('canvas');c.width=128;c.height=80;c.className='lthumb';const x=c.getContext('2d');
+  x.fillStyle='#fff';x.fillRect(0,0,128,80);
+  const b=nbox(o.b),bw=Math.max(b.w,1),bh=Math.max(b.h,1),k=Math.min(112/bw,64/bh),w=bw*k,h=bh*k,cx=64,cy=40;
+  x.save();x.translate(cx,cy);if(o.rot)x.rotate(o.rot*Math.PI/180);
+  const fill=o.fill&&!o.nofill?o.fill:null,stroke=o.stroke&&o.lw>0?o.stroke:null;x.lineWidth=Math.max(1,(o.lw||1)*k);
+  if(o.t==='img'){
+    let im=thumbImgs.get(o.img);
+    if(!im){im=new Image();im.src=blobUrl(o.img);thumbImgs.set(o.img,im);im.onload=()=>layersSoon()}
+    if(im.complete&&im.naturalWidth)x.drawImage(im,-w/2,-h/2,w,h);
+  }else if(o.t==='ell'){x.beginPath();x.ellipse(0,0,w/2,h/2,0,0,Math.PI*2);if(fill){x.fillStyle=fill;x.fill()}if(stroke){x.strokeStyle=stroke;x.stroke()}}
+  else if(o.t==='rect'||o.t==='round'){const r=o.t==='round'?Math.min(roundR(o)*k,w/2,h/2):0;x.beginPath();x.roundRect?x.roundRect(-w/2,-h/2,w,h,r):x.rect(-w/2,-h/2,w,h);if(fill){x.fillStyle=fill;x.fill()}if(stroke){x.strokeStyle=stroke;x.stroke()}}
+  else{const sx=o.b.w<0?-1:1,sy=o.b.h<0?-1:1;x.strokeStyle=o.stroke||'#000';x.beginPath();x.moveTo(-w/2*sx,-h/2*sy);x.lineTo(w/2*sx,h/2*sy);x.stroke();
+    if(o.t==='arrow'){const a=Math.atan2(h*sy,w*sx),L=Math.max(8,x.lineWidth*4);x.fillStyle=o.stroke||'#000';x.beginPath();x.moveTo(w/2*sx,h/2*sy);x.lineTo(w/2*sx-L*Math.cos(a-0.5),h/2*sy-L*Math.sin(a-0.5));x.lineTo(w/2*sx-L*Math.cos(a+0.5),h/2*sy-L*Math.sin(a+0.5));x.fill()}}
+  x.restore();return c;
+}
+function layerBox(it){
+  if(it.kind==='t'){const e=it.ref;try{const L=layoutBlock(e,measurer(e));return {x:e.xTL,y:e.baseTL-e.fs,w:L.W,h:L.H+e.fs*0.3}}catch(_){return {x:e.xTL,y:e.baseTL-e.fs,w:e.fs*4,h:e.fs*1.3}}}
+  if(it.kind==='orig')return null;
+  return aabb(nbox(it.ref.b),+it.ref.rot||0);
+}
+function layerLabel(it){
+  if(it.kind==='orig')return '<b>Pagina-inhoud</b><small>tekst en afbeeldingen uit de PDF</small>';
+  if(it.kind==='t')return '“'+esc(String(it.ref.text||'').replace(/\s+/g,' ').slice(0,34))+'”<small>tekst'+(it.ref.layer==='back'?' · achter tekst':'')+'</small>';
+  const nm=OLABEL[it.ref.t]||'Object';
+  return esc(nm)+'<small>'+(it.kind==='x'?'uit de PDF':'toegevoegd')+(it.ref.layer==='back'?' · achter tekst':'')+(it.ref.rot?' · '+it.ref.rot+'°':'')+'</small>';
+}
+let layersTimer=null;
+function layersSoon(){if(!S.showLayers)return;clearTimeout(layersTimer);layersTimer=setTimeout(renderLayers,250)}
+function renderLayers(){
+  const box=$('#s-layers');
+  if(!S.showLayers||!S.doc){box.hidden=true;return}
+  box.hidden=false;
+  const pn=layerPage(),P=S.pages[pn-1];if(!P)return;
+  const draw=layerList(pn,'arrange'),sel=layerSelRefs();
+  let rows=draw.slice().reverse();           // bovenste laag bovenaan, zoals in Canva
+  const selItemsHere=rows.filter(r=>r.ref&&sel.has(r.ref));
+  if(S.layerFilter==='overlap'&&selItemsHere.length){
+    const u=unionBox(selItemsHere.map(layerBox).filter(Boolean));
+    rows=rows.filter(r=>r.kind==='orig'||sel.has(r.ref)||(layerBox(r)&&boxHit(layerBox(r),u)));
+  }
+  // objecten die nog in de pagina-inhoud zitten (kunnen eruit gesleept worden)
+  const lifted=new Set(S.objs.filter(o=>o.kind==='ex'&&o.page===pn&&isLiftedEx(o)&&!o.del).map(o=>o.ord));
+  const deleted=new Set(S.objs.filter(o=>o.kind==='ex'&&o.page===pn&&o.del).map(o=>o.ord));
+  let inner=(P.objs||[]).filter(o=>!o.bg&&!lifted.has(o.ord)&&!deleted.has(o.ord)&&o.w*o.h>=40);
+  if(S.layerFilter==='overlap'&&selItemsHere.length){const u=unionBox(selItemsHere.map(layerBox).filter(Boolean));inner=inner.filter(o=>boxHit({x:o.x,y:o.y,w:o.w,h:o.h},u))}
+  inner=inner.slice(0,60);
+  $('#ly-title').textContent='Lagen · pagina '+pn;
+  const list=$('#ly-list');list.innerHTML='';
+  S.layerRows=rows;S.layerPn=pn;
+  rows.forEach((r,i)=>{
+    const el=document.createElement('div');el.className='lrow'+(r.kind==='orig'?' lorig':'')+(r.ref&&sel.has(r.ref)?' lsel':'');el.dataset.i=i;
+    const hd=document.createElement('span');hd.className='lgrip';hd.textContent='⠿';hd.title=r.kind==='orig'?'':'Sleep om de volgorde te veranderen';
+    if(r.kind==='orig')hd.style.visibility='hidden';
+    const th=r.kind==='orig'?thumbOf(P,{x:0,y:0,w:P.wPt,h:P.hPt}):r.kind==='n'?thumbNew(r.ref):thumbOf(P,layerBox(r));
+    const lb=document.createElement('span');lb.className='llbl';lb.innerHTML=layerLabel(r);
+    el.append(hd,th,lb);list.appendChild(el);
+    if(r.kind==='orig'&&inner.length){
+      const sub=document.createElement('div');sub.className='lsubs';
+      const tg=document.createElement('a');tg.href='#';tg.className='lsubt';tg.textContent=(S.layerOpenSub?'▾ ':'▸ ')+inner.length+' object'+(inner.length>1?'en':'')+' in de pagina-inhoud';
+      tg.onclick=ev=>{ev.preventDefault();S.layerOpenSub=!S.layerOpenSub;renderLayers()};sub.appendChild(tg);
+      if(S.layerOpenSub)for(const o of inner){
+        const se=document.createElement('div');se.className='lrow lsub';se.dataset.okey='x:'+pn+':'+o.ord;
+        const g2=document.createElement('span');g2.className='lgrip';g2.textContent='⠿';g2.title='Sleep naar boven of onder de pagina-inhoud om hem een eigen laag te geven';
+        const l2=document.createElement('span');l2.className='llbl';l2.innerHTML=esc(OLABEL[o.t]||'Object')+'<small>in de pagina-inhoud</small>';
+        se.append(g2,thumbOf(P,{x:o.x,y:o.y,w:o.w,h:o.h}),l2);sub.appendChild(se);
+      }
+      list.appendChild(sub);
+    }
+  });
+  $('#ly-all').classList.toggle('on',S.layerFilter!=='overlap');$('#ly-ov').classList.toggle('on',S.layerFilter==='overlap');
+  $('#ly-hint').textContent=S.layerFilter==='overlap'&&!selItemsHere.length?'Selecteer eerst iets om te zien wat ermee overlapt.':'Sleep een laag omhoog of omlaag. Boven de pagina-inhoud = voor de tekst, eronder = achter de tekst.';
+}
+// een laag aanklikken = selecteren
+function selectLayerRow(r,pn){
+  const P=S.pages[pn-1];
+  if(r.kind==='t'){if(S.draft&&S.draft.id===r.ref.id)return;if(S.mode!=='edit')setMode('edit');selectEdit(r.ref.id);return}
+  if(r.kind==='orig')return;
+  if(S.mode!=='obj')setMode('obj');
+  S.opage=pn;S.osel=[r.kind==='n'?'o:'+r.ref.id:'x:'+pn+':'+r.ref.ord];afterObjSel(P);renderLayers();
+}
+function selectLayerKey(k,pn){if(S.mode!=='obj')setMode('obj');S.opage=pn;S.osel=[k];afterObjSel(S.pages[pn-1]);renderLayers()}
+// nieuwe volgorde (bovenste eerst, zoals in de lijst) toepassen op de pagina
+function applyLayerOrder(pn,topFirst){
+  const drawOrder=topFirst.slice().reverse(),oi=drawOrder.findIndex(i=>i.kind==='orig');
+  drawOrder.forEach((it,idx)=>{if(it.kind==='orig')return;it.ref.layer=idx<oi?'back':'front';it.ref.z=idx});
+  if(S.draft&&drawOrder.some(i=>i.ref===S.draft))commit();
+  const P=S.pages[pn-1];objChanged(P);repaintAll();fillObjForm();syncUI();refreshArrange&&refreshArrange();renderLayers();
+}
+// slepen in de lijst
+$('#ly-list').addEventListener('pointerdown',ev=>{
+  const row=ev.target.closest('.lrow');if(!row||ev.button!==0)return;
+  const pn=S.layerPn,rows=S.layerRows;if(!rows)return;
+  const isSub=row.classList.contains('lsub'),i=+row.dataset.i,r=isSub?null:rows[i];
+  if(r&&r.kind==='orig')return;
+  ev.preventDefault();
+  const sy=ev.clientY;let moving=false,ins=null,line=null;
+  const list=$('#ly-list'),main=[...list.querySelectorAll('.lrow:not(.lsub)')];
+  const mv=e=>{
+    if(!moving&&Math.abs(e.clientY-sy)<5)return;
+    if(!moving){moving=true;row.classList.add('ldrag');line=document.createElement('div');line.className='lline';list.appendChild(line)}
+    // invoegplaats: tussen twee hoofdrijen
+    let k=main.length;for(let j=0;j<main.length;j++){const rr=main[j].getBoundingClientRect();if(e.clientY<rr.top+rr.height/2){k=j;break}}
+    ins=k;const lr=list.getBoundingClientRect(),ref=main[Math.min(k,main.length-1)].getBoundingClientRect();
+    line.style.top=((k<main.length?ref.top:ref.bottom)-lr.top+list.scrollTop-1)+'px';
+  };
+  const up=()=>{
+    window.removeEventListener('pointermove',mv);window.removeEventListener('pointerup',up);
+    row.classList.remove('ldrag');if(line)line.remove();
+    if(!moving){if(isSub)selectLayerKey(row.dataset.okey,pn);else selectLayerRow(r,pn);return}
+    pushUndo();
+    let item=r;
+    if(isSub){   // object uit de pagina-inhoud: krijgt een eigen laag
+      const ord=+row.dataset.okey.split(':')[2],P=S.pages[pn-1],it=objItems(P).find(x=>x.key===row.dataset.okey);if(!it)return;
+      const ed=ensureEd(it);ed.lift=true;item={kind:'x',ref:ed};
+    }
+    const top=rows.filter(x=>x!==r);
+    let pos=ins;const oldIdx=r?rows.indexOf(r):-1;if(r&&oldIdx>=0&&oldIdx<ins)pos--;
+    top.splice(Math.max(0,Math.min(top.length,pos)),0,item);
+    // bij het filter 'Overlappend' zijn niet alle lagen zichtbaar: de rest behoudt zijn volgorde
+    if(S.layerFilter==='overlap'){
+      const full=layerList(pn,'arrange').slice().reverse().filter(x=>x.ref!==item.ref);
+      const shown=new Set(top.map(x=>x.ref||x.kind));
+      const after=top[top.indexOf(item)+1];
+      const at=after?full.findIndex(x=>(x.ref||x.kind)===(after.ref||after.kind)):full.length;
+      full.splice(at<0?full.length:at,0,item);
+      applyLayerOrder(pn,full);
+    }else applyLayerOrder(pn,top);
+    say('Volgorde van de lagen aangepast.',2500);
+  };
+  window.addEventListener('pointermove',mv);window.addEventListener('pointerup',up);
+});
+$('#ly-all').onclick=()=>{S.layerFilter='all';renderLayers()};
+$('#ly-ov').onclick=()=>{S.layerFilter='overlap';renderLayers()};
+$('#ly-close').onclick=()=>{S.showLayers=false;$('#t-layers').classList.remove('on');renderLayers()};
+$('#t-layers').onclick=()=>{S.showLayers=!S.showLayers;$('#t-layers').classList.toggle('on',S.showLayers);renderLayers();if(S.showLayers)$('#side').scrollTop=0};
+$('#stage').addEventListener('scroll',()=>{if(S.showLayers&&!S.draft&&!(S.mode==='obj'&&S.osel.length))layersSoon()});
+
+// =================== PAGINABEHEER: samenvoegen, splitsen, draaien, verwijderen, ordenen ===================
+// een pagina echt draaien (de inhoud zelf), zodat bewerken op die pagina gewoon blijft werken
+function physRotate(doc,page,deg){
+  deg=((Math.round(deg)%360)+360)%360;if(!deg)return;
+  const {PDFName,PDFArray,PDFRef}=PDFLib,ctx=doc.context;
+  const box=page.getCropBox(),x0=box.x,y0=box.y,w=box.width,h=box.height,x1=x0+w,y1=y0+h;
+  const m=deg===90?[0,-1,1,0,-y0,x1]:deg===180?[-1,0,0,-1,x1,y1]:[0,1,-1,0,y1,-x0];
+  const pre=ctx.register(ctx.flateStream('q '+m.map(v=>+(+v).toFixed(4)).join(' ')+' cm\n')),post=ctx.register(ctx.flateStream('\nQ\n'));
+  const raw=page.node.get(PDFName.of('Contents')),list=[];
+  if(raw){const v=raw instanceof PDFRef?ctx.lookup(raw):raw;if(v instanceof PDFArray){for(let i=0;i<v.size();i++)list.push(v.get(i))}else list.push(raw)}
+  page.node.set(PDFName.of('Contents'),ctx.obj([pre,...list,post]));
+  for(const k of ['CropBox','BleedBox','TrimBox','ArtBox'])page.node.delete(PDFName.of(k));
+  page.setMediaBox(0,0,deg===180?w:h,deg===180?h:w);page.setRotation(PDFLib.degrees(0));
+  // links en formuliervelden meedraaien
+  const T=(x,y)=>[m[0]*x+m[2]*y+m[4],m[1]*x+m[3]*y+m[5]];
+  try{
+    const an=page.node.lookup(PDFName.of('Annots'));
+    if(an instanceof PDFArray)for(let i=0;i<an.size();i++){
+      const a=an.lookup(i),r=a&&a.lookup&&a.lookup(PDFName.of('Rect'));
+      if(r instanceof PDFArray&&r.size()===4){const v=[0,1,2,3].map(j=>r.lookup(j).asNumber()),p=[T(v[0],v[1]),T(v[2],v[3])];
+        a.set(PDFName.of('Rect'),ctx.obj([Math.min(p[0][0],p[1][0]),Math.min(p[0][1],p[1][1]),Math.max(p[0][0],p[1][0]),Math.max(p[0][1],p[1][1])]))}
+    }
+  }catch(e){}
+}
+// gedraaide pagina's (/Rotate) bij het openen rechtzetten, zodat de editor er gewoon op werkt
+async function normalizeRotation(buf){
+  try{
+    const s=b2s(buf.subarray(0,Math.min(buf.length,8e6)));
+    if(!/\/Rotate|\/ObjStm/.test(s)&&buf.length<8e6)return buf;
+    const d=await PDFLib.PDFDocument.load(buf,{ignoreEncryption:true,updateMetadata:false});
+    let any=false;
+    for(const p of d.getPages()){const r=((p.getRotation().angle%360)+360)%360;if(r){physRotate(d,p,r);any=true}}
+    return any?new Uint8Array(await d.save({useObjectStreams:false})):buf;
+  }catch(e){return buf}
+}
+const PM={items:[],exts:[],sel:new Set(),last:null,uid:1};
+function pmThumbFromCanvas(src,rot){
+  const c=document.createElement('canvas'),k=Math.min(150/src.width,150/src.height);c.width=Math.max(1,Math.round(src.width*k));c.height=Math.max(1,Math.round(src.height*k));
+  c.getContext('2d').drawImage(src,0,0,c.width,c.height);return c;
+}
+function openPages(){
+  if(!S.doc){say('Open eerst een PDF.',3000);return}
+  if(S.draft)finishDraft();
+  PM.items=S.pages.map(P=>({id:PM.uid++,src:'cur',n:P.n,rot:0,thumb:pmThumbFromCanvas(P.cv)}));
+  PM.exts=[];PM.sel=new Set();PM.last=null;
+  $('#pmback').hidden=false;renderPM();
+}
+function closePM(){$('#pmback').hidden=true;PM.items=[];PM.exts=[]}
+function renderPM(){
+  const g=$('#pm-grid');g.innerHTML='';
+  PM.items.forEach((it,i)=>{
+    const c=document.createElement('div');c.className='pmc'+(PM.sel.has(it.id)?' sel':'');c.dataset.id=it.id;
+    const tw=document.createElement('div');tw.className='pmt';
+    const th=it.thumb||document.createElement('canvas');th.style.transform=`rotate(${it.rot}deg)`;
+    if(it.rot%180){const s=Math.min(150/(th.height||1),150/(th.width||1),1);th.style.transform+=` scale(${s})`}
+    tw.appendChild(th);
+    const lb=document.createElement('div');lb.className='pml';
+    lb.innerHTML=`<b>${i+1}</b>`+(it.src==='ext'?` <span class="muted">${esc(PM.exts[it.ext].name.replace(/\.pdf$/i,''))} p.${it.n}</span>`:(it.n!==i+1?` <span class="muted">was ${it.n}</span>`:''));
+    const bt=document.createElement('div');bt.className='pmb';
+    bt.innerHTML='<button data-a="rl" title="90° naar links">↺</button><button data-a="rr" title="90° naar rechts">↻</button><button data-a="del" title="Verwijderen">✕</button>';
+    c.append(tw,lb,bt);g.appendChild(c);
+  });
+  const n=PM.sel.size;
+  $('#pm-info').textContent=`${PM.items.length} pagina${PM.items.length===1?'':"'s"}`+(n?` · ${n} geselecteerd`:'');
+  for(const id of ['pm-rl','pm-rr','pm-del','pm-extract'])$('#'+id).disabled=!n;
+}
+const pmSelItems=()=>PM.items.filter(it=>PM.sel.has(it.id));
+function pmRotate(ids,d){for(const it of PM.items)if(ids.has(it.id))it.rot=((it.rot+d)%360+360)%360;renderPM()}
+function pmDelete(ids){
+  if(PM.items.filter(it=>!ids.has(it.id)).length===0){say('Er moet minstens één pagina overblijven.',3500);return}
+  PM.items=PM.items.filter(it=>!ids.has(it.id));for(const id of ids)PM.sel.delete(id);renderPM();
+}
+// klikken, selecteren en slepen in het overzicht
+$('#pm-grid').addEventListener('pointerdown',ev=>{
+  const card=ev.target.closest('.pmc');if(!card||ev.button!==0)return;
+  const id=+card.dataset.id,btn=ev.target.closest('button');
+  if(btn){ev.preventDefault();const a=btn.dataset.a,ids=PM.sel.has(id)?new Set(PM.sel):new Set([id]);
+    if(a==='rl')pmRotate(ids,-90);else if(a==='rr')pmRotate(ids,90);else if(a==='del')pmDelete(ids);return}
+  ev.preventDefault();
+  const sx=ev.clientX,sy=ev.clientY;let drag=false,mark=null,ins=null;
+  const cards=()=>[...$('#pm-grid').querySelectorAll('.pmc')];
+  const mv=e=>{
+    if(!drag&&Math.hypot(e.clientX-sx,e.clientY-sy)<6)return;
+    if(!drag){drag=true;if(!PM.sel.has(id)){PM.sel=new Set([id]);renderPM()}mark=document.createElement('div');mark.className='pmmark';$('#pm-grid').appendChild(mark);cards().forEach(c=>{if(PM.sel.has(+c.dataset.id))c.classList.add('drag')})}
+    // invoegplek: voor of na de dichtstbijzijnde pagina
+    let best=null,bd=1e9;for(const [i,c] of cards().entries()){const r=c.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2,d=Math.hypot(e.clientX-cx,(e.clientY-cy)*1.5);if(d<bd){bd=d;best={i,r,after:e.clientX>cx}}}
+    if(!best)return;ins=best.i+(best.after?1:0);
+    const gr=$('#pm-grid').getBoundingClientRect();
+    Object.assign(mark.style,{left:((best.after?best.r.right+5:best.r.left-5)-gr.left+$('#pm-grid').scrollLeft-2)+'px',top:(best.r.top-gr.top+$('#pm-grid').scrollTop)+'px',height:best.r.height+'px'});
+  };
+  const up=e=>{
+    window.removeEventListener('pointermove',mv);window.removeEventListener('pointerup',up);
+    if(mark)mark.remove();
+    if(!drag){
+      if(e.ctrlKey||e.metaKey){PM.sel.has(id)?PM.sel.delete(id):PM.sel.add(id);PM.last=id}
+      else if(e.shiftKey&&PM.last!=null){const a=PM.items.findIndex(x=>x.id===PM.last),b=PM.items.findIndex(x=>x.id===id);for(let k=Math.min(a,b);k<=Math.max(a,b);k++)PM.sel.add(PM.items[k].id)}
+      else{PM.sel=new Set([id]);PM.last=id}
+      renderPM();return;
+    }
+    if(ins==null){renderPM();return}
+    const moving=PM.items.filter(x=>PM.sel.has(x.id)),before=PM.items.slice(0,ins).filter(x=>!PM.sel.has(x.id)).length;
+    const rest=PM.items.filter(x=>!PM.sel.has(x.id));rest.splice(before,0,...moving);PM.items=rest;renderPM();
+  };
+  window.addEventListener('pointermove',mv);window.addEventListener('pointerup',up);
+});
+document.addEventListener('keydown',e=>{
+  if($('#pmback').hidden)return;
+  if(e.key==='Escape'){e.preventDefault();closePM()}
+  else if((e.key==='Delete'||e.key==='Backspace')&&PM.sel.size&&e.target.tagName!=='INPUT'){e.preventDefault();pmDelete(new Set(PM.sel))}
+  else if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='a'){e.preventDefault();PM.sel=new Set(PM.items.map(x=>x.id));renderPM()}
+},true);
+// pagina's uit een andere PDF toevoegen (achter de selectie, anders achteraan)
+$('#pm-file').addEventListener('change',async e=>{
+  const files=[...e.target.files];e.target.value='';if(!files.length)return;
+  let at=PM.sel.size?Math.max(...PM.items.map((x,i)=>PM.sel.has(x.id)?i:-1))+1:PM.items.length;
+  const added=[];
+  for(const f of files){
+    try{
+      const bytes=new Uint8Array(await f.arrayBuffer());
+      const d=await pdfjsLib.getDocument({data:bytes.slice(0),...DOCOPTS}).promise;
+      const k=PM.exts.push({name:f.name,bytes})-1;
+      for(let n=1;n<=d.numPages;n++){
+        const pg=await d.getPage(n),v1=pg.getViewport({scale:1}),sc=Math.min(150/v1.width,150/v1.height),vp=pg.getViewport({scale:sc});
+        const c=document.createElement('canvas');c.width=Math.round(vp.width);c.height=Math.round(vp.height);
+        await pg.render({canvasContext:c.getContext('2d'),viewport:vp}).promise;
+        const it={id:PM.uid++,src:'ext',ext:k,n,rot:0,thumb:c};PM.items.splice(at++,0,it);added.push(it.id);
+      }
+      d.destroy();
+    }catch(err){say('Kon '+esc(f.name)+' niet lezen: '+esc(err.message||err),6000)}
+  }
+  PM.sel=new Set(added);renderPM();
+  if(added.length)say(added.length+' pagina'+(added.length>1?"'s":'')+' toegevoegd. Klik op Toepassen om ze in je PDF te zetten.',4500);
+});
+$('#pm-rl').onclick=()=>pmRotate(new Set(PM.sel),-90);
+$('#pm-rr').onclick=()=>pmRotate(new Set(PM.sel),90);
+$('#pm-del').onclick=()=>pmDelete(new Set(PM.sel));
+$('#pm-cancel').onclick=closePM;
+$('#pmback').addEventListener('mousedown',e=>{if(e.target.id==='pmback')closePM()});
+// toepassen: nieuwe volgorde, gedraaide, verwijderde en toegevoegde pagina's
+async function applyPages(){
+  const items=PM.items;
+  if(items.length===S.pages.length&&items.every((it,i)=>it.src==='cur'&&it.n===i+1&&!(it.rot%360))){closePM();return}
+  $('#pm-ok').disabled=true;say("Pagina's aanpassen…",60000);
+  try{
+    if(S.draft)commit();
+    const old={doc:true,bytes:S.bytes,state:snapState(),blobs:S.blobs};
+    let base=S.bytes,edits=JSON.parse(JSON.stringify(S.edits)),objs=JSON.parse(JSON.stringify(S.objs)),baked=false;
+    // een pagina met aanpassingen draaien: eerst de aanpassingen vast in de PDF zetten
+    const rotCur=new Set(items.filter(i=>i.src==='cur'&&i.rot%360).map(i=>i.n));
+    if([...rotCur].some(n=>edits.some(e=>e.page===n)||objs.some(o=>o.page===n))){base=(await buildPdfBytes()).bytes;edits=[];objs=[];baked=true}
+    const doc=await PDFLib.PDFDocument.load(base,{ignoreEncryption:true});
+    const orig=doc.getPages(),exts=[];
+    for(const x of PM.exts)exts.push(await PDFLib.PDFDocument.load(x.bytes,{ignoreEncryption:true}));
+    for(let i=doc.getPageCount()-1;i>=0;i--)doc.removePage(i);
+    const map=new Map();
+    for(const [i,it] of items.entries()){
+      let pg;
+      if(it.src==='cur'&&!map.has(it.n)){pg=orig[it.n-1];map.set(it.n,i+1)}
+      else{[pg]=await doc.copyPages(it.src==='cur'?doc:exts[it.ext],[it.n-1])}
+      doc.addPage(pg);
+      const tot=(((pg.getRotation().angle||0)+it.rot)%360+360)%360;
+      if(tot)physRotate(doc,pg,tot);else if(pg.getRotation().angle)pg.setRotation(PDFLib.degrees(0));
+    }
+    const nb=new Uint8Array(await doc.save({useObjectStreams:false}));
+    // aanpassingen meeverhuizen naar hun nieuwe paginanummer
+    const rk=(k,o,n)=>typeof k==='string'&&k.startsWith(o+':')?n+':'+k.slice(String(o).length+1):k;
+    edits=edits.filter(e=>map.has(e.page)).map(e=>{const o=e.page,n=map.get(o);e.page=n;if(e.key)e.key=rk(e.key,o,n);if(e.keys)e.keys=e.keys.map(k=>rk(k,o,n));if(e.anchor)e.anchor=rk(e.anchor,o,n);return e});
+    objs=objs.filter(o=>map.has(o.page)).map(o=>{o.page=map.get(o.page);return o});
+    const undo=S.undo.slice();undo.push(old);if(undo.length>100)undo.shift();
+    closePM();
+    await openBytes(nb,S.name,{keepId:S.docId,state:{e:edits,o:objs,blobs:S.blobs},keepStacks:{undo,redo:[]},quiet:true});
+    say("Pagina's aangepast."+(baked?' Je aanpassingen op de gedraaide pagina(s) zijn eerst vast in de PDF gezet; je kunt ze nog steeds aanpassen als gewone tekst.':'')+' Ongedaan maken: Ctrl+Z.',baked?9000:4000);
+  }catch(err){console.warn(err);say("Pagina's aanpassen lukte niet: "+esc(err.message||err),8000)}
+  finally{$('#pm-ok').disabled=false}
+}
+$('#pm-ok').onclick=applyPages;
+// ongedaan maken / opnieuw van paginabeheer
+async function swapDocState(entry,toStack){
+  toStack.push({doc:true,bytes:S.bytes,state:snapState(),blobs:S.blobs});
+  const st=JSON.parse(entry.state);
+  await openBytes(entry.bytes,S.name,{keepId:S.docId,state:{e:st.e||[],o:st.o||[],blobs:entry.blobs||S.blobs},keepStacks:{undo:S.undo,redo:S.redo},quiet:true});
+}
+// pagina's opslaan als aparte PDF('s) (met je aanpassingen erin)
+async function pmExport(groups,names){
+  if(S.draft)commit();
+  say('PDF maken…',60000);
+  const cur=await PDFLib.PDFDocument.load((await buildPdfBytes()).bytes,{ignoreEncryption:true}),exts=[];
+  for(const x of PM.exts)exts.push(await PDFLib.PDFDocument.load(x.bytes,{ignoreEncryption:true}));
+  const files=[];
+  for(const [gi,g] of groups.entries()){
+    const out=await PDFLib.PDFDocument.create();
+    for(const it of g){const [p]=await out.copyPages(it.src==='cur'?cur:exts[it.ext],[it.n-1]);out.addPage(p);if(it.rot)p.setRotation(PDFLib.degrees((((p.getRotation().angle||0)+it.rot)%360+360)%360))}
+    files.push({name:names[gi],bytes:new Uint8Array(await out.save())});
+  }
+  toast.style.display='none';
+  if(window.desktop&&files.length>1&&desktop.saveMany){const dir=await desktop.saveMany(files);if(dir)say(files.length+' PDF-bestanden opgeslagen in '+esc(dir)+'.',6000);else say('Opslaan geannuleerd.',2500);return}
+  if(window.desktop){for(const f of files){const fp=await desktop.savePdf(f.name,f.bytes);if(!fp){say('Opslaan geannuleerd.',2500);return}}say('Opgeslagen.',3000);return}
+  let dl=null;try{dl=await claude.use('downloads')}catch(e){}
+  if(!dl){say('Opslaan is hier niet beschikbaar.',5000);return}
+  if(files.length>1)say(`Je krijgt ${files.length} keer de vraag om een bestand op te slaan.`,4000);
+  for(const f of files){try{await dl.save({filename:f.name,data:new Blob([f.bytes],{type:'application/pdf'})})}catch(e){if(e&&e.code==='declined'){say('Opslaan gestopt.',3000);return}}}
+  say('Opgeslagen.',3000);
+}
+const pmBase=()=>S.name.replace(/\.pdf$/i,'');
+const pmLabel=g=>{const nums=g.map(it=>PM.items.indexOf(it)+1);return nums.length===1?'pagina '+nums[0]:"pagina's "+nums[0]+'-'+nums[nums.length-1]};
+$('#pm-extract').onclick=()=>{const g=pmSelItems();if(g.length)pmExport([g],[pmBase()+' ('+pmLabel(g)+').pdf'])};
+$('#pm-split').onclick=()=>{
+  const src=PM.sel.size?pmSelItems():PM.items;
+  if(src.length<2&&!PM.sel.size){say('Deze PDF heeft maar één pagina.',3000);return}
+  pmExport(src.map(it=>[it]),src.map(it=>pmBase()+' - pagina '+(PM.items.indexOf(it)+1)+'.pdf'));
+};
+$('#t-pages').onclick=openPages;
+
+window.__test={openPages,applyPages,PM,renderPM,physRotate,pmExport,renderLayers,applyLayerOrder,setRot,aabb,afterObjSel,setZoom,arrange,layerList,painterCapture,draftLayout,indexAt,caretXY,setSel,openAt,finishDraft,objItems,selItems,scanPageObjects,refreshObjs,deleteSelObjs,nudgeObjs,applyBox,addNewObj,insertSymbol,objItemByKey,fillObjForm,ensureGlyphs,runsFor,chainOf,fontById,fkOf,styleTexts,makeGroup,endGroup,nudgeGroup,itemsIn,rangeSelect,sigOf,calFor,hsOf,paragraphAround,paraBreak,estWord,fillFromLines,expandParagraph,DH,doUndo,doRedo,nudge,applyGap,updateGapFields,neighborGaps,styleOf,STYLEKEYS,openParDialog,computeGaps,S,buildPdfBytes,startDraftFromLine,extendDraft,commit,setMode,resolveFont,parseFontName,applyAutoFont,addUserFontFile,layoutBlock,measurer,liveUpdate,toggleStyle,norm};
 </script>
 </body>
 </html>

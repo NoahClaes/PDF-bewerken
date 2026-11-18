@@ -155,6 +155,20 @@ ipcMain.handle('save-pdf', async (_e, defaultName, bytes) => {
   fs.writeFileSync(fp, Buffer.from(bytes));
   return fp;
 });
+// meerdere PDF's tegelijk opslaan (splitsen): één keer een map kiezen
+ipcMain.handle('save-many', async (_e, files) => {
+  const r = await dialog.showOpenDialog(win, { title: 'Map kiezen om de PDF-bestanden in op te slaan', defaultPath: app.getPath('documents'), properties: ['openDirectory', 'createDirectory'] });
+  if (r.canceled || !r.filePaths[0]) return null;
+  const dir = r.filePaths[0];
+  for (const f of files) {
+    let name = String(f.name).replace(/[\\/:*?"<>|]/g, '').trim() || 'pagina.pdf';
+    let fp = path.join(dir, name), k = 2;
+    while (fs.existsSync(fp)) fp = path.join(dir, name.replace(/\.pdf$/i, '') + ' (' + (k++) + ').pdf');
+    fs.writeFileSync(fp, Buffer.from(f.bytes));
+  }
+  shell.openPath(dir);
+  return dir;
+});
 ipcMain.handle('show-in-folder', (_e, p) => { if (p && fs.existsSync(p)) shell.showItemInFolder(p); });
 ipcMain.handle('list-fonts', () => listFonts(path.join(app.getPath('userData'), 'fontindex.json')));
 ipcMain.handle('read-font', (_e, p) => {

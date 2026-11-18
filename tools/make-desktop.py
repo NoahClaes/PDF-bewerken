@@ -23,7 +23,8 @@ rep("const PDFJS_DATA='https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/';", "co
 rep("const r=await fetch(`${FSBASE}${slug}/files/${slug}-${sub}-${w}-${it?'italic':'normal'}.woff`);",
     "const fn=`${slug}/files/${slug}-${sub}-${w}-${it?'italic':'normal'}.woff`;let r=null;try{r=await fetch('fonts/'+fn);if(!r.ok)r=null}catch(_){r=null}if(!r)r=await fetch(FSBASE+fn);")
 # ---- opslaan met het gewone Windows-venster ----
-rep("""  let dl=null;try{dl=await claude.use('downloads')}catch(e){}""", """  if(window.desktop){
+rep("""  let dl=null;try{dl=await claude.use('downloads')}catch(e){}
+  if(!dl){say('Downloaden is hier niet beschikbaar.""", """  if(window.desktop){
     try{
       const fp=await desktop.savePdf(S.name.replace(/\\.pdf$/i,'')+' (bewerkt).pdf',bytes);
       if(!fp){say('Opslaan geannuleerd.',2500);return}
@@ -33,7 +34,8 @@ rep("""  let dl=null;try{dl=await claude.use('downloads')}catch(e){}""", """  if
     }catch(e){say('Opslaan lukte niet: '+esc(e.message||e),8000)}
     return;
   }
-  let dl=null;try{dl=await claude.use('downloads')}catch(e){}""")
+  let dl=null;try{dl=await claude.use('downloads')}catch(e){}
+  if(!dl){say('Downloaden is hier niet beschikbaar.""")
 # ---- titel van het venster ----
 rep("""    $('#fname').textContent=name;""", """    $('#fname').textContent=name;if(window.desktop)desktop.setTitle(name);""")
 # ---- lettertypes van deze computer: automatisch bij het openen ----

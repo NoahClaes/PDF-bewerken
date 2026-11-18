@@ -6,6 +6,7 @@ contextBridge.exposeInMainWorld('desktop', {
   ready: () => ipcRenderer.send('renderer-ready'),
   openDialog: () => ipcRenderer.invoke('open-dialog'),
   savePdf: (name, bytes) => ipcRenderer.invoke('save-pdf', name, bytes),
+  saveMany: files => ipcRenderer.invoke('save-many', files),
   showInFolder: p => ipcRenderer.invoke('show-in-folder', p),
   listFonts: () => ipcRenderer.invoke('list-fonts'),
   readFont: p => ipcRenderer.invoke('read-font', p),
