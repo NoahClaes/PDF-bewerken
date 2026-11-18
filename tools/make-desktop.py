@@ -84,7 +84,7 @@ if(window.desktop){
   desktop.onMenu('zoomin',()=>setZoom(zoomStep(1)));
   desktop.onMenu('zoomout',()=>setZoom(zoomStep(-1)));
   desktop.onMenu('zoomfit',()=>{if(S.doc)fitScale().then(s=>setZoom(s,null,true))});
-  $('#dl').textContent='Opslaan als PDF';$('#dl').title='Opslaan als PDF (Ctrl+S)';
+  (document.querySelector('#dl .dlt')||$('#dl')).textContent='Opslaan';$('#dl').title='Opslaan als PDF (Ctrl+S)';
   $('#openbtn').title='PDF openen (Ctrl+O)';
   $('#drop p').textContent='Sleep een PDF hierheen of kies een bestand. Het bestand blijft op deze computer; er wordt niets geüpload.';
   $('#localfonts').title='Lettertypes uit de Windows-lettertypemap en uit Adobe Creative Cloud. Dit gebeurt ook automatisch bij het openen van een PDF.';
