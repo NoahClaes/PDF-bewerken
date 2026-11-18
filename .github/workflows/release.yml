@@ -1,0 +1,50 @@
+# Bouwt het Windows-installatieprogramma en publiceert het als GitHub-release.
+# Start automatisch bij een nieuwe versietag (bv. v1.2.0). De app haalt nieuwe versies hier op.
+name: Windows-versie publiceren
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Onderdelen installeren
+        run: npm ci
+
+      - name: App verpakken
+        run: npx electron-builder --win dir --x64 --publish never
+
+      - name: Pictogram en versie-informatie
+        run: node tools/set-icon.mjs "dist/win-unpacked/PDF Bewerken.exe" build/icon.png build/icon.ico
+
+      - name: Installatieprogramma maken
+        shell: pwsh
+        run: |
+          $version = (Get-Content package.json | ConvertFrom-Json).version
+          if (-not (Get-Command makensis -ErrorAction SilentlyContinue)) { choco install nsis -y --no-progress }
+          $makensis = (Get-Command makensis -ErrorAction SilentlyContinue).Source
+          if (-not $makensis) { $makensis = "${env:ProgramFiles(x86)}\NSIS\makensis.exe" }
+          & $makensis "-DVERSION=$version" build/installer.nsi
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Get-ChildItem dist/*.exe
+
+      - name: Release publiceren
+        uses: softprops/action-gh-release@v2
+        with:
+          name: PDF Bewerken ${{ github.ref_name }}
+          body_path: RELEASE_NOTES.md
+          files: dist/PDF Bewerken Setup *.exe
+          fail_on_unmatched_files: true
