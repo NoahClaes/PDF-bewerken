@@ -26,8 +26,8 @@ Je standaard PDF-programma blijft hetzelfde. PDF Bewerken staat erbij onder **Op
 ## Nieuwe versie uitbrengen
 
 1. Pas `version` aan in `package.json` (bv. `1.2.0`) en schrijf wat er nieuw is in `RELEASE_NOTES.md`.
-2. Commit en push, en push daarna een tag met hetzelfde nummer: `git tag v1.2.0 && git push origin v1.2.0`.
-3. GitHub Actions bouwt het installatieprogramma op Windows en publiceert het onder **Releases**.
+2. Commit en push naar `main`.
+3. Omdat het versienummer veranderd is, bouwt GitHub Actions het installatieprogramma op Windows en publiceert het onder **Releases**.
 4. De geïnstalleerde apps zien de nieuwe versie bij de volgende start en werken zichzelf bij.
 
 ## Zelf opnieuw bouwen (voor ontwikkelaars)
