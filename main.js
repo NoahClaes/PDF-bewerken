@@ -65,7 +65,9 @@ function buildMenu() {
       { label: 'Alles selecteren', role: 'selectAll' }
     ] },
     { label: 'Beeld', submenu: [
-      { label: 'Inzoomen (venster)', role: 'zoomIn' }, { label: 'Uitzoomen (venster)', role: 'zoomOut' }, { label: 'Ware grootte', role: 'resetZoom' },
+      { label: 'Inzoomen', accelerator: 'CmdOrCtrl+Plus', registerAccelerator: false, click: send('menu-zoomin') },
+      { label: 'Uitzoomen', accelerator: 'CmdOrCtrl+-', registerAccelerator: false, click: send('menu-zoomout') },
+      { label: 'Pagina passend', accelerator: 'CmdOrCtrl+0', registerAccelerator: false, click: send('menu-zoomfit') },
       { type: 'separator' }, { label: 'Volledig scherm', role: 'togglefullscreen' },
       { type: 'separator' }, { label: 'Opnieuw laden', role: 'reload' }, { label: 'Ontwikkelaarshulpmiddelen', role: 'toggleDevTools' }
     ] },
@@ -99,6 +101,7 @@ function createWindow() {
   });
   win.once('ready-to-show', () => win.show());
   win.on('page-title-updated', e => e.preventDefault());
+  win.webContents.on('did-finish-load', () => { win.webContents.setZoomFactor(1); win.webContents.setVisualZoomLevelLimits(1, 1); });
   win.loadURL('app://editor/index.html');
   // links naar buiten openen in de gewone browser
   win.webContents.setWindowOpenHandler(({ url }) => { if (/^https?:/.test(url)) shell.openExternal(url); return { action: 'deny' }; });

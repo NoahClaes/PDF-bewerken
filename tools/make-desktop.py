@@ -79,6 +79,9 @@ if(window.desktop){
   desktop.onOpenFile(f=>{S.extOpen=true;openBytes(new Uint8Array(f.bytes),f.name,{})});
   desktop.onMenu('save',()=>{if(S.doc)$('#dl').click();else say('Open eerst een PDF.',3000)});
   desktop.onMenu('library',()=>{$('#libbtn').click()});
+  desktop.onMenu('zoomin',()=>setZoom(zoomStep(1)));
+  desktop.onMenu('zoomout',()=>setZoom(zoomStep(-1)));
+  desktop.onMenu('zoomfit',()=>{if(S.doc)fitScale().then(s=>setZoom(s,null,true))});
   $('#dl').textContent='Opslaan als PDF';$('#dl').title='Opslaan als PDF (Ctrl+S)';
   $('#openbtn').title='PDF openen (Ctrl+O)';
   $('#drop p').textContent='Sleep een PDF hierheen of kies een bestand. Het bestand blijft op deze computer; er wordt niets geüpload.';

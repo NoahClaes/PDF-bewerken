@@ -1,7 +1,7 @@
-Nieuw in **PDF Bewerken 1.2.0**
+Nieuw in **PDF Bewerken 1.3.0**
 
-- **Schikken (lagen), zoals in Word**: zet tekst, vormen en afbeeldingen *Voor tekst* of *Achter tekst*, of schuif ze *naar voren* / *naar achteren*. Bijvoorbeeld een gekleurd vlak achter een tekst, of een kader voor een tekst. Te vinden in het lint (groep *Schikken*) en bij *Objecten*.
-- **Opmaak kopiëren** neemt nu alles over: lettertype, vet, cursief, onderstreept, kleur en grootte. Klik met de kwast op een woord, of selecteer een stuk tekst, om de opmaak alleen daar toe te passen.
-- Wat je in de editor ziet, wordt nu getekend zoals het in de opgeslagen PDF komt.
+- **Zoomen met Ctrl + scrollwiel** (of knijpen op een touchpad), rond de plek van je muis. De pagina wordt daarna meteen weer scherp getekend.
+- **Ctrl + plus / Ctrl + min** zoomt in en uit, **Ctrl + 0** zet de pagina passend in het venster. Ook via het menu *Beeld*.
+- Zoomen gaat ook bij grote PDF's direct, en de tekst die je aan het bewerken bent blijft open.
 
-Heb je versie 1.1.0? Dan krijg je deze versie automatisch: klik op **Nu bijwerken** als de melding verschijnt.
+Heb je al een eerdere versie? Klik op **Nu bijwerken** als de melding verschijnt.
