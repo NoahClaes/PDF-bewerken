@@ -146,6 +146,7 @@
   #side label.btn{display:inline-flex;font-size:14px;color:inherit;margin:0;white-space:nowrap}
   #undo,#redo{font-size:17px;padding:4px 11px}
   #ribbon.off #r-sym{opacity:1;pointer-events:auto}
+  #side .arr{display:flex;gap:4px;flex-wrap:wrap}#side .arr button{padding:5px 8px;min-width:32px;justify-content:center}#side .arr svg{width:16px;height:16px;display:block}
   #fsres .fsr{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:5px 8px;border-radius:6px;cursor:pointer;font-size:13px}
   #fsres .fsr:hover{background:#f1f4fa}#fsres .fsr small{color:var(--muted);white-space:nowrap}
   @media (max-width:820px){#main{flex-direction:column}#side{width:auto;border-left:none;border-top:1px solid var(--line);max-height:42vh}}
@@ -228,6 +229,11 @@
     </div>
     <div class="rl">Alinea</div>
   </div>
+  <div class="rg" id="rg-arr">
+    <div class="rr"><button id="a-front" title="Helemaal naar voren: boven alles"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><rect x="1.5" y="8" width="7" height="6.5" fill="none"/><rect x="5" y="2" width="9.5" height="8" fill="currentColor" fill-opacity=".85"/></svg></button><button id="a-forward" title="Naar voren: één laag omhoog"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><rect x="1.5" y="6.5" width="8" height="8"/><rect x="6.5" y="1.5" width="8" height="8" fill="currentColor" fill-opacity=".85"/><path d="M3 3.5h3M3 3.5v3" stroke-linecap="round"/></svg></button><button id="a-backward" title="Naar achteren: één laag omlaag"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><rect x="6.5" y="1.5" width="8" height="8"/><rect x="1.5" y="6.5" width="8" height="8" fill="currentColor" fill-opacity=".25"/><path d="M13 12.5h-3M13 12.5v-3" stroke-linecap="round"/></svg></button><button id="a-back" title="Helemaal naar achteren: achter alles, ook achter de tekst van de pagina"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><rect x="5" y="2" width="9.5" height="8"/><rect x="1.5" y="8" width="7" height="6.5" fill="currentColor" fill-opacity=".25"/></svg></button></div>
+    <div class="rr"><button id="a-infront" title="Voor tekst: boven de tekst en afbeeldingen van de pagina">Voor tekst</button><button id="a-behind" title="Achter tekst: achter de tekst en afbeeldingen van de pagina (zoals een achtergrond)">Achter tekst</button></div>
+    <div class="rl">Schikken</div>
+  </div>
 </div>
 <div id="libpanel" hidden><div class="lh">Bewaarde bestanden <span class="muted">(alleen in deze browser)</span></div><div id="lib-list"></div></div>
 <div id="main">
@@ -276,6 +282,8 @@
         <div class="row" style="margin-top:6px"><div id="o-fillbox"><span class="muted sm">Vulkleur</span><input id="o-fill" type="color"></div><div id="o-strokebox"><span class="muted sm">Lijnkleur</span><input id="o-stroke" type="color"></div></div>
         <div class="row" style="margin-top:4px"><div id="o-lwbox"><span class="muted sm">Lijndikte (pt)</span><input id="o-lw" type="number" step="0.25" min="0"></div><div id="o-nofillbox"><label style="margin:14px 0 0;display:flex;gap:6px;align-items:center;color:inherit"><input id="o-nofill" type="checkbox" style="width:auto;margin:0"> Geen vulling</label></div></div>
       </div>
+      <label style="margin:12px 0 4px">Schikken<i class="info" tabindex="0" data-tip="Bepaal wat bovenop wat ligt, zoals in Word.&#10;Voor tekst: boven de tekst en afbeeldingen van de pagina.&#10;Achter tekst: erachter, zoals een achtergrond of kader.&#10;Naar voren/achteren: één laag verschuiven ten opzichte van wat ermee overlapt.">i</i></label>
+      <div class="arr"><button id="oa-front" title="Helemaal naar voren: boven alles"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><rect x="1.5" y="8" width="7" height="6.5" fill="none"/><rect x="5" y="2" width="9.5" height="8" fill="currentColor" fill-opacity=".85"/></svg></button><button id="oa-forward" title="Naar voren: één laag omhoog"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><rect x="1.5" y="6.5" width="8" height="8"/><rect x="6.5" y="1.5" width="8" height="8" fill="currentColor" fill-opacity=".85"/><path d="M3 3.5h3M3 3.5v3" stroke-linecap="round"/></svg></button><button id="oa-backward" title="Naar achteren: één laag omlaag"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><rect x="6.5" y="1.5" width="8" height="8"/><rect x="1.5" y="6.5" width="8" height="8" fill="currentColor" fill-opacity=".25"/><path d="M13 12.5h-3M13 12.5v-3" stroke-linecap="round"/></svg></button><button id="oa-back" title="Helemaal naar achteren: achter alles, ook achter de tekst van de pagina"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><rect x="5" y="2" width="9.5" height="8"/><rect x="1.5" y="8" width="7" height="6.5" fill="currentColor" fill-opacity=".25"/></svg></button><button id="oa-infront">Voor tekst</button><button id="oa-behind">Achter tekst</button></div>
       <div class="btns">
         <label class="btn" for="o-imgfile" id="o-replace">Andere afbeelding…</label><input id="o-imgfile" type="file" accept="image/*" hidden>
         <button id="o-del">Verwijderen</button>
@@ -1414,8 +1422,9 @@ function layoutBlock(e,measure){
 const SOFTK=0.08;      // 1 stap zachtheid = 0,08 pt vervaging (sigma)
 function edEl(e,isDraft,P){
   norm(e);
+  const inCv=!isDraft&&P&&P.inCanvas&&P.inCanvas.has('e:'+e.id+':'+hashOf(e));
   const sc=S.scale,g=document.createElement('div');g.className='ed'+(isDraft?' draft':'');
-  for(const [ri,r] of e.rects.entries()){if(P&&P.rmOK&&P.rmOK.has(e.id+':'+ri))continue;const c=document.createElement('div');c.className='cover';Object.assign(c.style,{left:r.x*sc+'px',top:r.y*sc+'px',width:r.w*sc+'px',height:r.h*sc+'px',background:e.bg});g.appendChild(c)}
+  for(const [ri,r] of e.rects.entries()){if(inCv||(P&&P.rmOK&&P.rmOK.has(e.id+':'+ri)))continue;const c=document.createElement('div');c.className='cover';Object.assign(c.style,{left:r.x*sc+'px',top:r.y*sc+'px',width:r.w*sc+'px',height:r.h*sc+'px',background:e.bg});g.appendChild(c)}
   if(e.text||isDraft){
     queueGlyphs(e,P);
     const meas=measurer(e),L=layoutBlock(e,meas),fe=fsEff(e);
@@ -1432,6 +1441,7 @@ function edEl(e,isDraft,P){
       t.appendChild(d);
     }
     if(e.soft>0)t.style.filter=`blur(${e.soft*SOFTK*sc}px)`;
+    if(inCv){t.style.opacity='0';t.classList.add('incv')}
     const deco=[e.underline?'underline':'',e.strike?'line-through':''].filter(Boolean).join(' ')||'none';
     const hs=hsOf(e);
     const stl={fontSize:fe*sc+'px',color:e.color,fontFamily:fam,fontWeight:e.bold&&!lib?'700':'400',fontStyle:e.italic&&!lib?'italic':'normal',letterSpacing:((e.ls||0)/hs)*sc+'px',textDecoration:deco,transformOrigin:'0 0',transform:hs!==1?`scaleX(${hs})`:'none'};
@@ -1490,7 +1500,7 @@ function edEl(e,isDraft,P){
 }
 function paintOverlay(P){
   P.ov.innerHTML='';const sc=S.scale;
-  for(const o of S.objs)if(o.kind==='new'&&o.page===P.n&&!o.del)P.ov.appendChild(newObjEl(o,P));
+  for(const o of S.objs)if(o.kind==='new'&&o.page===P.n&&!o.del&&!(P.inCanvas&&P.inCanvas.has('n:'+o.id+':'+hashOf(o))))P.ov.appendChild(newObjEl(o,P));
   const list=S.edits.filter(e=>e.page===P.n&&!(S.draft&&S.draft.id===e.id));
   for(const e of list)P.ov.appendChild(edEl(e,false,P));
   if(S.draft&&S.draft.page===P.n)P.ov.appendChild(edEl(S.draft,true,P));
@@ -1717,7 +1727,7 @@ function draftFromLine(P,l){
 function startDraftFromLine(P,l){
   const d=draftFromLine(P,l);
   S.anchorBox={page:P.n,...boxOfLine(l)};
-  if(S.painter){Object.assign(d,S.painter);S.painter=null;d.userFont=true;d._segs=null;d.matchInfo={warn:false,t:'Opmaak overgenomen'};}
+  if(S.painter){painterApplyBlock(d,S.painter);S.painter=null;}
   openDraft(d);
   if(!d.userFont)applyAutoFont(d,l.rname,l);
 }
@@ -1975,6 +1985,7 @@ function selectEdit(id){
   const e=S.edits.find(e=>e.id===id);if(!e)return;
   const d=norm(JSON.parse(JSON.stringify(e)));d.anchor=null;
   S.anchorBox={page:e.page,...editBox(e)};
+  if(S.painter){pushUndo();painterApplyBlock(d,S.painter);S.painter=null}
   openDraft(d,true);
 }
 function openDraft(d,existing){
@@ -2013,6 +2024,7 @@ function refreshTools(){
   if($('#f-color').value!==st.color)$('#f-color').value=st.color;
   const si=$('#selinfo'),sr=selRange(d);
   if(si){si.hidden=false;si.textContent=sr[2]?`Opmaak (vet, kleur, lettertype…) geldt nu alleen voor de ${sr[1]-sr[0]} geselecteerde tekens.`:''}
+  refreshArrange&&refreshArrange();
   T('r-bul',d.list==='bullet');T('r-num',d.list==='number');T('r-marks',S.marks);T('r-paint',!!S.painter);
   for(const a of ['left','center','right','justify'])T('f-a-'+a,d.align===a);
   $('#f-hl-x').style.display=d.hl?'':'none';$('#f-shade-x').style.display=d.shade?'':'none';
@@ -2213,7 +2225,7 @@ $('#r-marks').onclick=()=>{S.marks=!S.marks;if(S.draft)upd();else $('#r-marks').
 $('#r-paint').onclick=()=>{
   if(S.painter){S.painter=null;refreshTools();return}
   if(!S.draft){say('Open eerst een tekstregel, en klik daarna op deze knop.',3500);return}
-  S.painter=styleOf(S.draft);$('#r-paint').classList.add('on');say('Opmaak gekopieerd. Klik nu op een andere tekstregel om hem toe te passen.',4500);
+  S.painter=painterCapture(S.draft);$('#r-paint').classList.add('on');say('Opmaak gekopieerd (lettertype, vet, cursief, onderstreept, kleur, grootte en alinea). Selecteer nu de tekst die dezelfde opmaak moet krijgen, of klik op een andere regel.',6000);
 };
 // ---- afstandsvelden en pijltjestoetsen ----
 for(const w of ['up','dn']){
@@ -2522,10 +2534,24 @@ async function buildPdfBytes(){
   r.report.soft=imgs.size;
   return r;
 }
-async function buildPdfBytes1(opts){
+// ---- tekenen: gedeeld door opslaan en het voorbeeld in de editor ----
+// laagvolgorde op een pagina: [achter de tekst] , de oorspronkelijke inhoud , [voor de tekst]
+const hashOf=o=>JSON.stringify(o,(k,v)=>k&&k[0]==='_'?undefined:v);
+const exMoved=o=>{const a=o.b0,b=o.b;return !!(a&&b&&(Math.abs(a.x-b.x)>1e-3||Math.abs(a.y-b.y)>1e-3||Math.abs(a.w-b.w)>1e-3||Math.abs(a.h-b.h)>1e-3))};
+const isLiftedEx=o=>!!(o.lift||o.img||exMoved(o));
+const zDef=(k,r)=>r.z!=null?r.z:(k==='x'?5e5:k==='n'?1e6:2e6)+(r.id||0);
+function layerList(pn,mode){   // mode: 'export' | 'preview' (zonder open tekstblok) | 'arrange' (met open tekstblok)
+  const L=[],dr=S.draft&&S.draft.page===pn?S.draft:null;
+  for(const e of S.edits){if(e.page!==pn||!(e.text&&e.text.trim()))continue;if(dr&&dr.id===e.id)continue;L.push({kind:'t',ref:e})}
+  if(dr&&mode==='arrange')L.push({kind:'t',ref:dr});
+  for(const o of S.objs){if(o.page!==pn||o.del)continue;if(o.kind==='new')L.push({kind:'n',ref:o});else if(o.kind==='ex'&&isLiftedEx(o))L.push({kind:'x',ref:o})}
+  const by=(a,b)=>zDef(a.kind,a.ref)-zDef(b.kind,b.ref);
+  return [...L.filter(i=>i.ref.layer==='back').sort(by),{kind:'orig'},...L.filter(i=>i.ref.layer!=='back').sort(by)];
+}
+function mkRender(pdf,opts){
+  opts=opts||{};
   const softInfo={};
   const {PDFDocument,StandardFonts,rgb}=PDFLib;
-  const pdf=await PDFDocument.load(S.bytes,{ignoreEncryption:false});
   pdf.registerFontkit(fontkit);
   const cache={};const fallbackFonts=new Set();const usedFonts=new Set();const fontInfo=new Map();const missingSet=new Set();
   const getFont=async e=>{
@@ -2548,49 +2574,15 @@ async function buildPdfBytes1(opts){
   };
   const col=h=>{const [r,g,b]=rgbOf(h);return rgb(r/255,g/255,b/255)};
   const pages=pdf.getPages();
-  for(const e of S.edits)norm(e);
-  // 1. echt verwijderen van de oude tekst uit de pagina-inhoud (per vak)
-  const report={removed:0,covered:[]};
-  const byPage={};
-  const okR=r=>r&&[r.x,r.y,r.w,r.h].every(Number.isFinite);
-  for(const e of S.edits){e.rects=(e.rects||[]).filter(okR);for(const r of e.rects)(byPage[e.page]=byPage[e.page]||[]).push({e,r,n:0})}
-  for(const o of S.objs)if(o.kind==='ex'&&!byPage[o.page])byPage[o.page]=[];
-  for(const pn of Object.keys(byPage)){
-    const P=S.pages[pn-1],page=pages[pn-1],items=byPage[pn];
-    const toR=({r})=>({x0:P.x0+r.x,x1:P.x0+r.x+r.w,y0:P.y1-(r.y+r.h),y1:P.y1-r.y});
-    const tItems=items.filter(i=>!i.r.ul),uItems=items.filter(i=>i.r.ul);
-    try{
-      const guard=P.lines.map(l=>({x0:P.x0+l.xTL,x1:P.x0+l.xTL+l.wpt,y:P.y1-l.baseTL,fs:l.fs}));
-      const ops=await objOpsFor(+pn,pdf,page);
-      const counts=removeTextInRects(pdf,page,tItems.map(toR),uItems.map(toR),ops,guard);
-      tItems.forEach((it,i)=>{it.n=counts[i];it.unsafe=!!(counts.unsafe&&counts.unsafe[i]);it.col=counts.colors?counts.colors[i]:null;report.removed+=counts[i]});
-      uItems.forEach((it,i)=>{it.n=counts.kills[i]});
-    }catch(err){console.warn('Tekst verwijderen mislukt',err)}
-  }
-  for(const pn of Object.keys(byPage))for(const it of byPage[pn])if(it.col&&!it.e._src)it.e._src=it.col;
-  // 2. alleen waar verwijderen niet lukte: overdekken
-  const coveredSet=new Set();
-  for(const pn of Object.keys(byPage)){
-    const P=S.pages[pn-1],page=pages[pn-1];
-    for(const it of byPage[pn]){
-      if(it.n>0&&!it.unsafe&&!(isSoft(it.e)&&!it.r.ul)){continue}
-      if(it.n>0){page.drawRectangle({x:P.x0+it.r.x,y:P.y1-(it.r.y+it.r.h),width:it.r.w,height:it.r.h,color:col(it.e.bg),borderWidth:0});continue}
-      page.drawRectangle({x:P.x0+it.r.x,y:P.y1-(it.r.y+it.r.h),width:it.r.w,height:it.r.h,color:col(it.e.bg),borderWidth:0});
-      if(!it.r.ul&&(it.e.orig!==undefined||!it.e.text)&&!coveredSet.has(it.e.id)){coveredSet.add(it.e.id);report.covered.push((it.e.orig||'wisvak')+' (p.'+it.e.page+')')}
-    }
-  }
-  // 2b. nieuwe afbeeldingen en vormen
-  for(const o of S.objs)if(o.kind==='new'&&!o.del&&pages[o.page-1])await drawNewObj(pdf,pages[o.page-1],S.pages[o.page-1],o);
-  // 3. nieuwe tekst tekenen (alinea's, inspringen, lijsten, uitlijning, letterafstand, markering, arcering)
   const {pushGraphicsState,popGraphicsState,setCharacterSpacing}=PDFLib;
-  for(const e of S.edits){
-    if(!(e.text&&e.text.trim()))continue;
-    let P=S.pages[e.page-1],page=pages[e.page-1];
+  const report={removed:0,covered:[]},coveredSet=new Set();
+  async function drawText(e,page,P){
+    if(!(e.text&&e.text.trim()))return;
     const soft=isSoft(e);
     if(soft&&opts.imgs){
       const g=opts.imgs.get(e.id);
       if(g){const im=await pdf.embedPng(g.png);page.drawImage(im,{x:P.x0+e.xTL+g.bx,y:P.y1-(e.baseTL+g.by+g.h),width:g.w,height:g.h})}
-      continue;
+      return;
     }
     try{
       const fe=fsEff(e);
@@ -2678,11 +2670,79 @@ async function buildPdfBytes1(opts){
       });
     }catch(err){throw new Error('Pagina '+e.page+', “'+e.text.slice(0,30)+'”: '+(err.message||err))}
   }
+  const refsOf=page=>{const c=page.node.Contents(),o=[];if(c instanceof PDFLib.PDFArray){for(let i=0;i<c.size();i++)o.push(String(c.get(i)))}else if(c)o.push(String(c));return o};
+  async function renderPage(pn,page,P,pv){
+    const okR=r=>r&&[r.x,r.y,r.w,r.h].every(Number.isFinite);
+    const eds=S.edits.filter(e=>e.page===pn&&!(pv&&S.draft&&S.draft.id===e.id));
+    if(pv&&S.draft&&S.draft.page===pn)eds.push(S.draft);
+    const items=[];
+    for(const e of eds){norm(e);e.rects=(e.rects||[]).filter(okR);e.rects.forEach((r,ri)=>items.push({e,r,ri,n:0}))}
+    const toR=({r})=>({x0:P.x0+r.x,x1:P.x0+r.x+r.w,y0:P.y1-(r.y+r.h),y1:P.y1-r.y});
+    const tItems=items.filter(i=>!i.r.ul),uItems=items.filter(i=>i.r.ul);
+    // 1. oude tekst echt verwijderen; verplaatste objecten uit de inhoud halen
+    let lifted=new Map();
+    try{
+      const guard=P.lines.map(l=>({x0:P.x0+l.xTL,x1:P.x0+l.xTL+l.wpt,y:P.y1-l.baseTL,fs:l.fs}));
+      const ops=await objOpsFor(pn,pdf,page);
+      const counts=removeTextInRects(pdf,page,tItems.map(toR),uItems.map(toR),ops,guard);
+      tItems.forEach((it,i)=>{it.n=counts[i];it.unsafe=!!(counts.unsafe&&counts.unsafe[i]);it.col=counts.colors?counts.colors[i]:null;report.removed+=counts[i]});
+      uItems.forEach((it,i)=>{it.n=counts.kills[i]});
+      lifted=counts.lifted||lifted;
+    }catch(err){console.warn('Tekst verwijderen mislukt',err)}
+    for(const it of items)if(it.col&&!it.e._src)it.e._src=it.col;
+    const done=new Set();
+    for(const it of tItems)if(it.n>0&&!it.unsafe)done.add(it.e.id+':'+it.ri);
+    for(const it of uItems)if(it.n>0)done.add(it.e.id+':'+it.ri);
+    // 2. lagen
+    const list=layerList(pn,pv?'preview':'export'),oi=list.findIndex(i=>i.kind==='orig');
+    const drawn=new Set();
+    const drawItem=async it=>{
+      if(it.kind==='t'){if(pv&&isSoft(it.ref))return;await drawText(it.ref,page,P)}
+      else if(it.kind==='n'){await drawNewObj(pdf,page,P,it.ref);drawn.add('n:'+it.ref.id+':'+hashOf(it.ref))}
+      else if(it.kind==='x'){const s=lifted.get(it.ref.ord);if(s)page.pushOperators(PDFLib.PDFOperator.of(s))}
+    };
+    const back=list.slice(0,oi),front=list.slice(oi+1);
+    if(back.length){
+      // achter de tekst: tekenen in een nieuwe inhoudsstroom en die vooraan zetten
+      page.node.normalize();
+      const before=new Set(refsOf(page));
+      page.contentStream=undefined;page.contentStreamRef=undefined;
+      for(const it of back)await drawItem(it);
+      const arr=page.node.Contents();
+      if(arr instanceof PDFLib.PDFArray){
+        const add=[];for(let i=arr.size()-1;i>=0;i--){if(!before.has(String(arr.get(i)))){add.unshift(arr.get(i));arr.remove(i)}}
+        add.forEach((r,j)=>arr.insert(j,r));
+      }
+      page.contentStream=undefined;page.contentStreamRef=undefined;
+    }
+    // 3. alleen waar verwijderen niet lukte: overdekken (net boven de oorspronkelijke inhoud)
+    for(const it of items){
+      if(it.n>0&&!it.unsafe&&!(isSoft(it.e)&&!it.r.ul)){continue}
+      page.drawRectangle({x:P.x0+it.r.x,y:P.y1-(it.r.y+it.r.h),width:it.r.w,height:it.r.h,color:col(it.e.bg),borderWidth:0});
+      if(it.n>0)continue;
+      if(!pv&&!it.r.ul&&(it.e.orig!==undefined||!it.e.text)&&!coveredSet.has(it.e.id)){coveredSet.add(it.e.id);report.covered.push((it.e.orig||'wisvak')+' (p.'+it.e.page+')')}
+    }
+    // 4. voor de tekst, in volgorde
+    for(const it of front)await drawItem(it);
+    for(const e of eds)if(!(pv&&S.draft&&S.draft.id===e.id)&&!isSoft(e))drawn.add('e:'+e.id+':'+hashOf(e));
+    return {done,drawn};
+  }
+  async function finish(){
   // lettertypes die nergens gebruikt zijn niet insluiten (een leeg lettertype geeft in Acrobat een foutmelding)
   pdf.fonts=pdf.fonts.filter(f=>usedFonts.has(f));
   report.fallback=[...fallbackFonts];report.missing=[...missingSet];
   report.fonts=[...fontInfo.entries()].filter(([f])=>usedFonts.has(f)).map(([f,i])=>i);
-  return {bytes:await pdf.save(),report,soft:softInfo};
+    return {bytes:await pdf.save(),report,soft:softInfo};
+  }
+  return {renderPage,finish,report};
+}
+async function buildPdfBytes1(opts){
+  const pdf=await PDFLib.PDFDocument.load(S.bytes,{ignoreEncryption:false});
+  const R=mkRender(pdf,opts),pages=pdf.getPages();
+  for(const e of S.edits)norm(e);
+  const touched=[...new Set([...S.edits.map(e=>e.page),...S.objs.map(o=>o.page)])].sort((a,b)=>a-b);
+  for(const pn of touched)if(pages[pn-1]&&S.pages[pn-1])await R.renderPage(pn,pages[pn-1],S.pages[pn-1],false);
+  return R.finish();
 }
 
 // ---- tekst echt uit de inhoud van een pagina halen ----
@@ -2972,7 +3032,7 @@ function removeTextInRects(pdf,page,rects,killRects,objOps,guard){
     if(op.fill)s+=rgbOps(op.fill)+' rg\n';if(op.stroke)s+=rgbOps(op.stroke)+' RG\n';if(op.lw!=null)s+=(op.lw/scl(M2)).toFixed(4)+' w\n';
     return s+body+'\nQ\n';
   };
-  const objects=[];counts.objects=objects;
+  const objects=[];counts.objects=objects;counts.lifted=new Map();
   let xobjs=null;try{const res=page.node.Resources();xobjs=res&&res.lookup(PDFName.of('XObject'))}catch(e){}
   const numsOf=arr=>{const o=[];try{for(let i=0;i<arr.size();i++){const v=arr.lookup(i);o.push(v&&v.asNumber?v.asNumber():parseFloat(String(v)))}}catch(e){}return o};
   const xinfo=nm=>{try{const x=xobjs&&xobjs.lookup(PDFName.of(nm));if(!x||!x.dict)return null;const st=x.dict.get(PDFName.of('Subtype'));const sub=st?String(st):'';let bb=null,mx=null;if(sub==='/Form'){const b=x.dict.lookup(PDFName.of('BBox'));if(b)bb=numsOf(b);const m=x.dict.lookup(PDFName.of('Matrix'));if(m)mx=numsOf(m)}return {sub,bb,mx}}catch(e){return null}};
@@ -3034,7 +3094,7 @@ function removeTextInRects(pdf,page,rects,killRects,objOps,guard){
           const op=imgObj(info.sub==='/Image'?'image':'form',pts,nm.v);
           if(op){any=true;
             if(op.del){drop=true;repl='\n'}
-            else if(op.M||op.img){drop=true;repl='\n';lift+=lifted(op,op.img?(fm?'q '+fmtM(fm)+' cm /'+op.img+' Do Q':'/'+op.img+' Do'):'/'+nm.v+' Do')}
+            else if(op.M||op.img||op.lift){drop=true;repl='\n';counts.lifted.set(objects[objects.length-1].ord,lifted(op,op.img?(fm?'q '+fmtM(fm)+' cm /'+op.img+' Do Q':'/'+op.img+' Do'):'/'+nm.v+' Do'))}
             else{out+=objPre(op);post='\nQ\n'}}
           // tekst in een groep (bv. een ingevoegde pagina): ook letter voor letter weghalen
           if(!rects.length&&info.sub==='/Form'&&counts.shows){const mxv=info.mx&&info.mx.length===6?info.mx:[1,0,0,1,0,0];try{scanFormText(pdf,pageRes,nm.v,mmul(mxv,ctm),counts.shows,1)}catch(e){}}
@@ -3047,7 +3107,7 @@ function removeTextInRects(pdf,page,rects,killRects,objOps,guard){
         break}
       case 'BI':{const op=imgObj('image',[[0,0],[1,0],[0,1],[1,1]],null);if(op){any=true;
         if(op.del){drop=true;repl='\n'}
-        else if(op.M||op.img){drop=true;repl='\n';lift+=lifted(op,op.img?'/'+op.img+' Do':segTxt)}
+        else if(op.M||op.img||op.lift){drop=true;repl='\n';counts.lifted.set(objects[objects.length-1].ord,lifted(op,op.img?'/'+op.img+' Do':segTxt))}
         else{out+=objPre(op);post='\nQ\n'}}break}
       case 'm':case 'l':if(a.length>=2)path.push(ptT(a[a.length-2],a[a.length-1]));break;
       case 're':if(a.length>=4){const [x,y,w,h]=a.slice(-4);path.push(ptT(x,y),ptT(x+w,y),ptT(x+w,y+h),ptT(x,y+h))}break;
@@ -3068,7 +3128,7 @@ function removeTextInRects(pdf,page,rects,killRects,objOps,guard){
           if(op&&pathOut>=0){
             any=true;
             if(op.del){out=out.slice(0,pathOut);drop=true;repl='\n'}
-            else if(op.M){out=out.slice(0,pathOut);drop=true;repl='\n';lift+=lifted(op,pathTxt.join('')+'\n'+(op.nofill&&hasF?NOFILL[sg.op]:sg.op))}
+            else if(op.M||op.lift){out=out.slice(0,pathOut);drop=true;repl='\n';counts.lifted.set(o.ord,lifted(op,pathTxt.join('')+'\n'+(op.nofill&&hasF?NOFILL[sg.op]:sg.op)))}
             else{out=out.slice(0,pathOut)+objPre(op)+out.slice(pathOut);if(op.nofill&&hasF){drop=true;repl='\n'+NOFILL[sg.op]+'\n'}post='\nQ\n'}
           }
         }
@@ -3086,7 +3146,7 @@ function removeTextInRects(pdf,page,rects,killRects,objOps,guard){
     if(post)out+=post;
   }
   out+=tail;
-  if(lift){out='q\n'+out+'\nQ\n'+lift;any=true}
+  if(any)out='q\n'+out+'\nQ\n';
   if(any){
     const ns=ctx.flateStream(s2b(out));
     page.node.set(PDFName.of('Contents'),ctx.obj([ctx.register(ns)]));
@@ -3422,6 +3482,7 @@ function fillObjForm(){
   $('#s-obj').hidden=!items.length;$('#s-ins').hidden=!(S.mode==='obj'&&!items.length);
   if(S.mode==='obj')$('#s-empty').hidden=true;
   if(!items.length)return;
+  refreshArrange();
   const one=items.length===1?items[0]:null,u=unionBox(items.map(i=>nbox(i.b)));
   $('#o-title').textContent=one?(OLABEL[one.t]||'Object'):items.length+' objecten geselecteerd';
   const set=(id,v)=>{const el=$('#'+id);if(document.activeElement!==el)el.value=v};
@@ -3538,7 +3599,10 @@ function textRectsFor(n){
   for(const e of list)(e.rects||[]).forEach((r,i)=>{if(r&&[r.x,r.y,r.w,r.h].every(Number.isFinite))(r.ul?u:t).push({key:e.id+':'+i,r})});
   return {t,u};
 }
-const exSig=n=>{const o=S.objs.filter(o=>o.kind==='ex'&&o.page===n),{t,u}=textRectsFor(n);return (o.length||t.length||u.length)?JSON.stringify([o,t,u]):'[]'};
+const exSig=n=>{
+  const o=S.objs.filter(o=>o.page===n),e=S.edits.filter(x=>x.page===n&&!(S.draft&&S.draft.id===x.id)),{t,u}=textRectsFor(n);
+  return (o.length||e.length||t.length||u.length)?hashOf([o,e,t,u,S.fonts.length]):'[]';
+};
 function boxT(P,b0,b){
   const sx=b0.w>0.5?b.w/b0.w:1,sy=b0.h>0.5?b.h/b0.h:1;
   const X0=P.x0+b0.x,Y0=P.y1-(b0.y+b0.h),X1=P.x0+b.x,Y1=P.y1-(b.y+b.h);
@@ -3560,7 +3624,7 @@ async function objOpsFor(n,pdf,page){
     else{
       const a=o.b0,b=o.b;
       if(Math.abs(a.x-b.x)>1e-3||Math.abs(a.y-b.y)>1e-3||Math.abs(a.w-b.w)>1e-3||Math.abs(a.h-b.h)>1e-3)op.M=boxT(P,a,b);
-      if(o.fill)op.fill=o.fill;if(o.stroke)op.stroke=o.stroke;if(o.lw!=null)op.lw=o.lw;if(o.nofill)op.nofill=true;
+      if(o.fill)op.fill=o.fill;if(o.stroke)op.stroke=o.stroke;if(o.lw!=null)op.lw=o.lw;if(o.nofill)op.nofill=true;if(o.lift)op.lift=true;
       if(o.img){
         // de nieuwe afbeelding vult het oude vak; het verschil in vorm zit in de verplaatsing
         const im=await embedBlob(pdf,o.img);op.img=page.node.newXObject('ImR',im.ref).toString().slice(1);
@@ -3573,11 +3637,9 @@ async function objOpsFor(n,pdf,page){
 async function pagePreviewBytes(n){
   const out=await PDFLib.PDFDocument.create();
   const [cp]=await out.copyPages(S.plib,[n-1]);out.addPage(cp);
-  const ops=await objOpsFor(n,out,cp),P=S.pages[n-1],{t,u}=textRectsFor(n);
-  const toR=r=>({x0:P.x0+r.x,x1:P.x0+r.x+r.w,y0:P.y1-(r.y+r.h),y1:P.y1-r.y});
-  const guard=P.lines.map(l=>({x0:P.x0+l.xTL,x1:P.x0+l.xTL+l.wpt,y:P.y1-l.baseTL,fs:l.fs}));
-  const c=removeTextInRects(out,cp,t.map(x=>toR(x.r)),u.map(x=>toR(x.r)),ops,guard);
-  P.rmNext=new Set([...t.filter((x,i)=>c[i]>0&&!(c.unsafe&&c.unsafe[i])).map(x=>x.key),...u.filter((x,i)=>c.kills&&c.kills[i]>0).map(x=>x.key)]);
+  const P=S.pages[n-1],R=mkRender(out,{preview:true});
+  const res=await R.renderPage(n,cp,P,true);
+  P.rmNext=res.done;P.canvasNext=res.drawn;
   return out.save({useObjectStreams:false});
 }
 async function rerenderBase(P){
@@ -3586,14 +3648,14 @@ async function rerenderBase(P){
   P.osig=key;const my=P.rseq=(P.rseq||0)+1;
   try{
     let page,tmp=null;
-    if(key&&!S.plib){P.rmOK=null;return}
+    if(key&&!S.plib){P.rmOK=null;P.inCanvas=null;return}
     if(key){const bytes=await pagePreviewBytes(P.n);if(my!==P.rseq)return;tmp=await pdfjsLib.getDocument({data:bytes,...DOCOPTS}).promise;page=await tmp.getPage(1)}
     else page=await S.doc.getPage(P.n);
     const vp=page.getViewport({scale:S.scale}),off=document.createElement('canvas');off.width=P.cv.width;off.height=P.cv.height;
     await page.render({canvasContext:off.getContext('2d'),viewport:vp,transform:P.dpr!==1?[P.dpr,0,0,P.dpr,0,0]:null}).promise;
     if(my!==P.rseq||!document.body.contains(P.cv))return;
     P.ctx.clearRect(0,0,P.cv.width,P.cv.height);P.ctx.drawImage(off,0,0);
-    P.rmOK=key?P.rmNext:null;paintOverlay(P);
+    P.rmOK=key?P.rmNext:null;P.inCanvas=key?P.canvasNext:null;paintOverlay(P);
     if(tmp)setTimeout(()=>{try{tmp.destroy()}catch(e){}},0);
   }catch(e){console.warn('voorbeeld mislukt',e);P.osig=null}
 }
@@ -3712,13 +3774,16 @@ function pageSelectStart(ev,P){
   const now=Date.now(),k=S.clk;
   const n=(k&&now-k.t<450&&Math.hypot(ev.clientX-k.x,ev.clientY-k.y)<6)?k.n+1:1;
   S.clk={t:now,x:ev.clientX,y:ev.clientY,n};
-  if(n===2){let a=i,b=i;while(a>0&&isWordCh(txt[a-1]))a--;while(b<txt.length&&isWordCh(txt[b]))b++;setSel(a,b);return}
+  if(n===2){let a=i,b=i;while(a>0&&isWordCh(txt[a-1]))a--;while(b<txt.length&&isWordCh(txt[b]))b++;setSel(a,b);
+    if(S.painter&&a<b){painterApplyRange(S.draft,S.painter);S.painter=null;fillForm({keepText:true});paintOverlay(S.pages[S.draft.page-1]);dhRecord('paint');refreshTools();say('Opmaak toegepast op het woord.',2500)}
+    return}
   if(n>=3){const a=txt.lastIndexOf('\n',i-1)+1,bb=txt.indexOf('\n',i);setSel(a,bb<0?txt.length:bb);return}
   let anchor=i;
   if(ev.shiftKey&&document.activeElement===t)anchor=t.selectionDirection==='backward'?t.selectionEnd:t.selectionStart;
   setSel(anchor,i);
   const mv=e2=>{const c2=draftLayout();if(!c2)return;const [x2,y2]=ptOf(e2,P);setSel(anchor,indexAt(c2,x2,y2))};
-  const up=()=>{window.removeEventListener('pointermove',mv);window.removeEventListener('pointerup',up)};
+  const up=()=>{window.removeEventListener('pointermove',mv);window.removeEventListener('pointerup',up);
+    if(S.painter&&S.draft&&t.selectionStart!==t.selectionEnd){painterApplyRange(S.draft,S.painter);S.painter=null;fillForm({keepText:true});paintOverlay(S.pages[S.draft.page-1]);dhRecord('paint');refreshTools();say('Opmaak toegepast op de selectie.',2500)}};
   window.addEventListener('pointermove',mv);window.addEventListener('pointerup',up);
 }
 // pijltjes omhoog/omlaag, Home en End volgen de regels zoals ze in de pagina staan
@@ -3739,9 +3804,14 @@ $('#f-text').addEventListener('keydown',e=>{
 },true);
 // een blok openen op de plek waar je klikt (hele alinea, zoals in Word)
 function openAt(P,l,ev){
+  const pt=S.painter;S.painter=null;   // met de kwast: alleen het aangeklikte woord krijgt de opmaak (zoals in Word)
   startDraftFromLine(P,l);
   if(!ev.altKey&&S.draft&&!S.draft.userFont)expandParagraph(true);
   const c=draftLayout(),[x,y]=ptOf(ev,P),i=indexAt(c,x,y);setSel(i,i);
+  if(pt&&S.draft){
+    const txt=S.draft.text;let a=i,b=i;while(a>0&&isWordCh(txt[a-1]))a--;while(b<txt.length&&isWordCh(txt[b]))b++;
+    if(a<b){setSel(a,b);painterApplyRange(S.draft,pt);fillForm({keepText:true});paintOverlay(P);dhRecord('paint');refreshTools();say('Opmaak toegepast op het woord.',2500)}
+  }
   S.clk={t:Date.now(),x:ev.clientX,y:ev.clientY,n:1};
 }
 // wijzigingen meteen bewaren: een blok dat niet veranderd is, laat geen sporen na
@@ -3752,7 +3822,64 @@ function draftChanged(d){
 }
 function finishDraft(){const d=S.draft;if(!d)return;if(S.draftExisting||draftChanged(d))commit();else cancelDraft()}
 
-window.__test={draftLayout,indexAt,caretXY,setSel,openAt,finishDraft,objItems,selItems,scanPageObjects,refreshObjs,deleteSelObjs,nudgeObjs,applyBox,addNewObj,insertSymbol,objItemByKey,fillObjForm,ensureGlyphs,runsFor,chainOf,fontById,fkOf,styleTexts,makeGroup,endGroup,nudgeGroup,itemsIn,rangeSelect,sigOf,calFor,hsOf,paragraphAround,paraBreak,estWord,fillFromLines,expandParagraph,DH,doUndo,doRedo,nudge,applyGap,updateGapFields,neighborGaps,styleOf,STYLEKEYS,openParDialog,computeGaps,S,buildPdfBytes,startDraftFromLine,extendDraft,commit,setMode,resolveFont,parseFontName,applyAutoFont,addUserFontFile,layoutBlock,measurer,liveUpdate,toggleStyle,norm};
+// =================== LAGEN: naar voren / naar achteren, voor of achter de tekst (zoals in Word) ===================
+function arrangeTargets(){
+  if(S.mode==='obj'){const its=selItems();return its.map(i=>({kind:i.isNew?'n':'x',ref:ensureObjEd(i),page:i.P.n}))}
+  if(S.draft)return [{kind:'t',ref:S.draft,page:S.draft.page}];
+  return [];
+}
+function itemBox(it){
+  if(it.kind==='t'){const L=layoutBlock(it.ref,measurer(it.ref));return {x:it.ref.xTL,y:it.ref.baseTL-it.ref.fs,w:L.W,h:L.H}}
+  return nbox(it.ref.b);
+}
+const boxHit=(a,b)=>a.x<b.x+b.w&&b.x<a.x+a.w&&a.y<b.y+b.h&&b.y<a.y+a.h;
+function arrange(action){
+  const T=arrangeTargets();
+  if(!T.length){say('Klik eerst in een tekst, of kies Objecten en selecteer een afbeelding of vorm.',4500);return}
+  const pn=T[0].page;
+  if(T.some(t=>t.page!==pn)){say('Selecteer objecten op één pagina.',3500);return}
+  pushUndo();
+  for(const t of T)if(t.kind==='x')t.ref.lift=true;   // bestaand object uit de PDF: wordt een eigen laag
+  const sel=new Set(T.map(t=>t.ref)),isSel=i=>!!i.ref&&sel.has(i.ref);
+  let arr=layerList(pn,'arrange');
+  const picked=arr.filter(isSel),rest=arr.filter(i=>!isSel(i)),oiR=rest.findIndex(i=>i.kind==='orig');
+  if(action==='front')arr=[...rest,...picked];
+  else if(action==='back')arr=[...picked,...rest];
+  else if(action==='behind')arr=[...rest.slice(0,oiR),...picked,...rest.slice(oiR)];
+  else if(action==='infront')arr=[...rest.slice(0,oiR+1),...picked,...rest.slice(oiR+1)];
+  else{
+    // één stap: voorbij het eerstvolgende ding dat er echt mee overlapt (de oorspronkelijke inhoud telt altijd)
+    const sb=picked.map(itemBox),u=unionBox(sb);
+    const overl=i=>i.kind==='orig'||boxHit(itemBox(i),u);
+    const first=arr.findIndex(isSel),last=arr.length-1-[...arr].reverse().findIndex(isSel);
+    if(action==='forward'){let j=last+1;while(j<arr.length&&!overl(arr[j]))j++;if(j<arr.length){const r2=rest.slice();const pos=r2.indexOf(arr[j]);arr=[...r2.slice(0,pos+1),...picked,...r2.slice(pos+1)]}}
+    else{let j=first-1;while(j>=0&&!overl(arr[j]))j--;if(j>=0){const r2=rest.slice();const pos=r2.indexOf(arr[j]);arr=[...r2.slice(0,pos),...picked,...r2.slice(pos)]}}
+  }
+  const oi=arr.findIndex(i=>i.kind==='orig');
+  arr.forEach((it,idx)=>{if(it.kind==='orig')return;it.ref.layer=idx<oi?'back':'front';it.ref.z=idx});
+  const back=T[0].ref.layer==='back';
+  const msg={front:'Helemaal naar voren gezet.',back:'Helemaal naar achteren gezet, achter de tekst van de pagina.',behind:'Achter de tekst van de pagina gezet.',infront:'Voor de tekst van de pagina gezet.',forward:'Een laag naar voren.',backward:'Een laag naar achteren.'}[action];
+  if(T[0].kind==='t'){commit()}
+  const P=S.pages[pn-1];
+  objChanged(P);repaintAll();fillObjForm();syncUI();refreshArrange();
+  say(msg+(back?' (Achter tekst)':''),3500);
+}
+function refreshArrange(){
+  const T=arrangeTargets(),back=T.length&&T.every(t=>t.ref.layer==='back');
+  for(const p of ['a-','oa-']){const a=$('#'+p+'behind'),b=$('#'+p+'infront');if(a)a.classList.toggle('on',!!(T.length&&back));if(b)b.classList.toggle('on',!!(T.length&&!back))}
+}
+for(const p of ['a-','oa-'])for(const k of ['front','forward','backward','back','behind','infront']){const el=$('#'+p+k);if(el){el.addEventListener('mousedown',e=>e.preventDefault());el.onclick=()=>arrange(k)}}
+// =================== OPMAAK KOPIËREN: de opmaak van de geselecteerde tekst (ook vet, cursief, onderstreept, kleur) ===================
+function painterCapture(d){
+  const st=selStyle(d);   // opmaak van de selectie (of van de letter voor de cursor)
+  const cap=styleOf(d);for(const k of ['font','bold','italic','underline','strike','color'])cap[k]=st[k];
+  return cap;
+}
+const RUNKEYS=['font','bold','italic','underline','strike','color'];
+function painterApplyBlock(d,cap){Object.assign(d,cap);d.rn=null;d.userFont=true;d._segs=null;d.matchInfo={warn:false,t:'Opmaak overgenomen'}}
+function painterApplyRange(d,cap){const o={};for(const k of RUNKEYS)o[k]=cap[k];setRangeStyle(d,o);d.userFont=true}
+
+window.__test={arrange,layerList,painterCapture,draftLayout,indexAt,caretXY,setSel,openAt,finishDraft,objItems,selItems,scanPageObjects,refreshObjs,deleteSelObjs,nudgeObjs,applyBox,addNewObj,insertSymbol,objItemByKey,fillObjForm,ensureGlyphs,runsFor,chainOf,fontById,fkOf,styleTexts,makeGroup,endGroup,nudgeGroup,itemsIn,rangeSelect,sigOf,calFor,hsOf,paragraphAround,paraBreak,estWord,fillFromLines,expandParagraph,DH,doUndo,doRedo,nudge,applyGap,updateGapFields,neighborGaps,styleOf,STYLEKEYS,openParDialog,computeGaps,S,buildPdfBytes,startDraftFromLine,extendDraft,commit,setMode,resolveFont,parseFontName,applyAutoFont,addUserFontFile,layoutBlock,measurer,liveUpdate,toggleStyle,norm};
 
 if(window.desktop){
   desktop.onOpenFile(f=>{S.extOpen=true;openBytes(new Uint8Array(f.bytes),f.name,{})});
