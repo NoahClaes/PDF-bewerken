@@ -34,7 +34,6 @@
                 <data android:mimeType="application/pdf" />
             </intent-filter>
         </config-file>
-        <framework src="androidx.core:core:1.12.0" />
         <resource-file src="src/android/pdfb_paths.xml" target="res/xml/pdfb_paths.xml" />
         <source-file src="src/android/PdfbAndroid.java" target-dir="src/be/pdfbewerken/plugin" />
         <source-file src="src/android/PdfbFileProvider.java" target-dir="src/be/pdfbewerken/plugin" />
