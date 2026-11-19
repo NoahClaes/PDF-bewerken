@@ -1,0 +1,11 @@
+{
+  "name": "pdfb-android",
+  "version": "1.0.0",
+  "description": "PDF Bewerken: opslaan, delen, openen met en updates op Android",
+  "cordova": {
+    "id": "pdfb-android",
+    "platforms": ["android"]
+  },
+  "keywords": ["ecosystem:cordova", "cordova-android"],
+  "license": "UNLICENSED"
+}

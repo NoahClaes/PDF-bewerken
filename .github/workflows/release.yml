@@ -1,7 +1,7 @@
 # Bouwt het Windows-installatieprogramma en publiceert het als GitHub-release.
 # Start vanzelf zodra het versienummer in package.json verandert (bv. 1.1.0 -> 1.2.0).
 # Bestaat er al een release met dat nummer, dan gebeurt er niets. De app haalt nieuwe versies hier op.
-name: Windows-versie publiceren
+name: Windows- en Android-versie publiceren
 
 on:
   push:
@@ -70,3 +70,43 @@ jobs:
           files: dist/PDF Bewerken Setup *.exe
           fail_on_unmatched_files: true
           make_latest: true
+
+  # Android-app (APK) bij dezelfde release zetten. Nodig: GitHub-secrets ANDROID_KEYSTORE_B64 en ANDROID_KEYSTORE_PASS.
+  android:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      GH_TOKEN: ${{ github.token }}
+      HAS_KEY: ${{ secrets.ANDROID_KEYSTORE_B64 != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Versie bepalen
+        id: ver
+        run: |
+          V=$(node -p "require('./package.json').version")
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          if [ "$HAS_KEY" != "true" ]; then echo "::warning::Geen Android-ondertekensleutel ingesteld; de Android-app wordt overgeslagen."; echo "skip=true" >> "$GITHUB_OUTPUT"; exit 0; fi
+          if gh release view "v$V" --repo "$GITHUB_REPOSITORY" --json assets -q '.assets[].name' | grep -qi '\.apk$'; then echo "APK bestaat al."; echo "skip=true" >> "$GITHUB_OUTPUT"; else echo "skip=false" >> "$GITHUB_OUTPUT"; fi
+      - uses: actions/setup-java@v4
+        if: steps.ver.outputs.skip == 'false'
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: actions/setup-node@v4
+        if: steps.ver.outputs.skip == 'false'
+        with:
+          node-version: 22
+      - uses: gradle/actions/setup-gradle@v4
+        if: steps.ver.outputs.skip == 'false'
+        with:
+          gradle-version: '8.7'
+      - name: APK bouwen en ondertekenen
+        if: steps.ver.outputs.skip == 'false'
+        env:
+          ANDROID_KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+          ANDROID_KEYSTORE_PASS: ${{ secrets.ANDROID_KEYSTORE_PASS }}
+        run: bash tools/build-android.sh release
+      - name: APK bij de release zetten
+        if: steps.ver.outputs.skip == 'false'
+        run: gh release upload "v${{ steps.ver.outputs.version }}" "dist-android/PDF-Bewerken-${{ steps.ver.outputs.version }}.apk" --repo "$GITHUB_REPOSITORY" --clobber
