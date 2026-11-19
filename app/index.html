@@ -2667,11 +2667,12 @@ function setMode(m){
   if(S.group)endGroup(true);
   if(m==='obj'&&S.draft)commit();
   if(m!=='obj'){S.osel=[];S.odrag=null}
-  S.mode=m;document.body.className='m-'+m;
+  S.mode=m;document.body.classList.remove('m-edit','m-add','m-cover','m-obj');document.body.classList.add('m-'+m);
   for(const k of ['edit','add','cover','obj'])$('#t-'+k).classList.toggle('on',k===m);
+  $('#t-obj').classList.toggle('on',m==='obj'||m==='edit');
   repaintAll();fillForm();fillObjForm();
 }
-$('#t-edit').onclick=()=>setMode('edit');$('#t-add').onclick=()=>setMode('add');$('#t-cover').onclick=()=>setMode('cover');$('#t-obj').onclick=()=>setMode('obj');
+$('#t-edit').onclick=()=>setMode('edit');$('#t-add').onclick=()=>setMode('add');$('#t-cover').onclick=()=>setMode('cover');$('#t-obj').onclick=()=>setMode('edit');
 $('#zoom').onchange=async e=>{
   const v=e.target.value;if(v==='cur')return;
   setZoom(v==='fit'?await fitScale():parseFloat(v),null,v==='fit');
@@ -2915,6 +2916,20 @@ function layerList(pn,mode){   // mode: 'export' | 'preview' (zonder open tekstb
   const by=(a,b)=>zDef(a.kind,a.ref)-zDef(b.kind,b.ref);
   return [...bgs,...L.filter(i=>i.ref.layer==='back').sort(by),{kind:'orig'},...L.filter(i=>i.ref.layer!=='back').sort(by)];
 }
+// Lettertypes uit de PDF gebruiken interne tekencodes (pdf.js verschuift letters naar een privégebied).
+// Zonder deze correctie zou een PDF-lezer die codes 'lezen' en is de tekst niet te zoeken of te kopiëren.
+function fixToUnicode(f,cf){
+  const emb=f&&f.embedder;if(!emb||emb.__pdfbU||typeof emb.embedUnicodeCmap!=='function')return;
+  const rev=new Map();for(const [u,m] of cf.u2f){const cp=m.codePointAt(0);if(!rev.has(cp))rev.set(cp,[...u].map(c=>c.codePointAt(0)))}
+  const orig=emb.embedUnicodeCmap;emb.__pdfbU=true;
+  emb.embedUnicodeCmap=function(ctx){
+    try{for(const g of this.glyphCache.access()){
+      const cps=g.codePoints||[],hit=cps.find(cp=>rev.has(cp));
+      if(hit!==undefined){const real=rev.get(hit);try{g.codePoints=real}catch(e){}if(g.codePoints!==real){try{Object.defineProperty(g,'codePoints',{value:real,configurable:true})}catch(e){}}}
+    }}catch(e){}
+    return orig.call(this,ctx);
+  };
+}
 function mkRender(pdf,opts){
   opts=opts||{};
   const softInfo={};
@@ -2935,7 +2950,7 @@ function mkRender(pdf,opts){
       else{
         // gewone lettertypebestanden (TTF/OTF) helemaal insluiten: het 'alleen gebruikte letters'-insluiten maakt bij sommige lettertypes (bv. Carlito) onzichtbare letters
         const u8=new Uint8Array(cf.buf),woff=u8[0]===0x77&&u8[1]===0x4F&&u8[2]===0x46&&u8[3]===0x46;
-        f=await pdf.embedFont(u8,{subset:woff||u8.length>3e6});fontInfo.set(f,{name:cf.name,odd:(cf.italic||cf.weight<=300)&&!cf.hidden&&!/^noto-/.test(cf.slug||''),n:0,ex:[]})}
+        f=await pdf.embedFont(u8,{subset:woff||u8.length>3e6});if(cf.u2f&&cf.u2f.size)fixToUnicode(f,cf);fontInfo.set(f,{name:cf.name,odd:(cf.italic||cf.weight<=300)&&!cf.hidden&&!/^noto-/.test(cf.slug||''),n:0,ex:[]})}
     }
     return cache[k]=f;
   };
@@ -3770,7 +3785,7 @@ function objPointerDown(ev,P){
   if(key){
     // achtergrond: klikken selecteert hem, slepen trekt een selectiekader (zoals in Canva)
     const itb=objItemByKey(key);
-    if(itb&&itb.bg&&!S.osel.includes(key)&&!(ev.shiftKey||ev.ctrlKey||ev.metaKey)){startObjBand(ev,P,key);return}
+    if(itb&&itb.bg&&!S.osel.includes(key)&&!(ev.shiftKey||ev.ctrlKey||ev.metaKey)){startObjBand(ev,P);return}   // klik = loslaten, slepen = selectiekader; dubbelklik selecteert de achtergrond
     if(S.opage!==P.n){S.osel=[];S.opage=P.n}
     if(ev.shiftKey||ev.ctrlKey||ev.metaKey){if(S.osel.includes(key)){S.osel=S.osel.filter(k=>k!==key);afterObjSel(P);return}S.osel.push(key)}
     else if(!S.osel.includes(key))S.osel=[key];
@@ -4382,17 +4397,50 @@ function thumbBg(o){
 function layerBox(it){
   if(it.kind==='t'){const e=it.ref;try{const L=layoutBlock(e,measurer(e));return {x:e.xTL,y:e.baseTL-e.fs,w:L.W,h:L.H+e.fs*0.3}}catch(_){return {x:e.xTL,y:e.baseTL-e.fs,w:e.fs*4,h:e.fs*1.3}}}
   if(it.kind==='orig')return null;
+  if(it.kind==='pt'){const bs=it.lines.map(boxOfLine);const x0=Math.min(...bs.map(b=>b.x0)),x1=Math.max(...bs.map(b=>b.x1)),t=Math.min(...bs.map(b=>b.top)),bo=Math.max(...bs.map(b=>b.bot));return {x:x0,y:t,w:x1-x0,h:bo-t}}
+  if(it.kind==='po')return {x:it.obj.x,y:it.obj.y,w:it.obj.w,h:it.obj.h};
   if(it.kind==='bg')return {x:it.obj.x,y:it.obj.y,w:it.obj.w,h:it.obj.h};
   return aabb(nbox(it.ref.b),+it.ref.rot||0);
 }
 function layerLabel(it){
   if(it.kind==='orig')return '<b>Pagina-inhoud</b><small>tekst en afbeeldingen uit de PDF</small>';
+  if(it.kind==='pt')return '“'+esc(it.text.replace(/\s+/g,' ').slice(0,34))+(it.text.length>34?'…':'')+'”<small>tekst'+(it.lines.length>1?' · '+it.lines.length+' regels':'')+'</small>';
+  if(it.kind==='po')return esc(OLABEL[it.obj.t]||'Object')+'<small>uit de PDF</small>';
   if(it.kind==='bg')return '<b>Achtergrond</b><small>'+(it.obj.t==='path'?'kleurvlak':'afbeelding')+' over de hele pagina</small>';
-  if(it.kind==='t')return '“'+esc(String(it.ref.text||'').replace(/\s+/g,' ').slice(0,34))+'”<small>tekst'+(it.ref.layer==='back'?' · achter tekst':'')+'</small>';
+  if(it.kind==='t')return '“'+esc(String(it.ref.text||'').replace(/\s+/g,' ').slice(0,34))+'”<small>tekst</small>';
   const nm=OLABEL[it.ref.t]||'Object';
-  return esc(nm)+'<small>'+(it.kind==='x'?'uit de PDF':'toegevoegd')+(it.ref.layer==='back'?' · achter tekst':'')+(it.ref.rot?' · '+it.ref.rot+'°':'')+'</small>';
+  return esc(nm)+'<small>'+(it.kind==='x'?'uit de PDF':'toegevoegd')+(it.ref.rot?' · '+it.ref.rot+'°':'')+'</small>';
 }
-const rowKey=r=>r.kind==='orig'?'orig':r.kind==='bg'?'bg'+r.ord:r.ref;
+const rowKey=r=>r.kind==='orig'?'orig':r.kind==='bg'?'bg'+r.ord:(r.kind==='pt'||r.kind==='po')?r.key:r.ref;
+// alinea's en objecten die nog in de pagina-inhoud zitten: elk een eigen rij in de lijst
+function pageParts(pn){
+  const P=S.pages[pn-1];if(!P)return [];
+  const taken=new Set();for(const e of S.edits)if(e.page===pn)keysOf(e).forEach(k=>taken.add(k));
+  if(S.draft&&S.draft.page===pn)keysOf(S.draft).forEach(k=>taken.add(k));
+  const txt=[],done=new Set();
+  if(!P.rotated){
+    const ls=P.lines.slice().sort((a,b)=>a.topTL-b.topTL||a.xTL-b.xTL);
+    for(const l of ls){
+      const k=keyOf(pn,l);if(taken.has(k)||done.has(k)||!String(l.str||'').trim())continue;
+      let blk=[l];try{blk=paragraphAround(P,l).filter(x=>!taken.has(keyOf(pn,x))&&!done.has(keyOf(pn,x)))}catch(e){}
+      if(!blk.includes(l))blk=[l];
+      blk.sort((a,b)=>a.baseTL-b.baseTL);blk.forEach(x=>done.add(keyOf(pn,x)));
+      txt.push({kind:'pt',lines:blk,key:'pt:'+k,text:blk.map(x=>x.str).join(' ')});
+    }
+  }
+  const lifted=new Set(S.objs.filter(o=>o.kind==='ex'&&o.page===pn&&(isLiftedEx(o)||o.del)).map(o=>o.ord));
+  const objs=(P.objs||[]).filter(o=>!o.bg&&!lifted.has(o.ord)&&o.w*o.h>=40).sort((a,b)=>b.ord-a.ord).slice(0,80).map(o=>({kind:'po',obj:o,key:'x:'+pn+':'+o.ord}));
+  return [...txt,...objs];   // tekst staat in een PDF bijna altijd boven de afbeeldingen
+}
+// een alinea uit de PDF een eigen laag geven (wordt een gewoon tekstblok)
+async function paraToEdit(P,lines){
+  const first=lines[0],d=draftFromLine(P,first),prev=S.draft;
+  S.draft=d;
+  try{if(lines.length>1)applySelection(P,d,lines);await applyAutoFont(d,first.rname,first)}catch(e){}
+  S.draft=prev;
+  const clean=JSON.parse(JSON.stringify(d));clean.anchor=null;S.edits.push(clean);
+  return {kind:'t',ref:clean};
+}
 let layersTimer=null;
 function layersSoon(){if(!S.showLayers)return;clearTimeout(layersTimer);layersTimer=setTimeout(renderLayers,250)}
 function renderLayers(){
@@ -4403,12 +4451,15 @@ function renderLayers(){
   S.layerPn=pn;
   const draw=layerList(pn,'arrange'),sel=layerSelRefs();
   const selKeys=new Set(S.mode==='obj'?S.osel:[]);
-  const isSel=r=>(r.ref&&sel.has(r.ref))||(r.kind==='bg'&&selKeys.has('x:'+pn+':'+r.ord));
-  let rows=draw.slice().reverse();           // bovenste laag bovenaan, zoals in Canva
+  const isSel=r=>(r.ref&&sel.has(r.ref))||(r.kind==='bg'&&selKeys.has('x:'+pn+':'+r.ord))||(r.kind==='po'&&selKeys.has(r.key));
+  const parts=pageParts(pn);
+  let rows=[];
+  for(const it of draw.slice().reverse()){if(it.kind==='orig')rows.push(...parts);else rows.push(it)}   // bovenste laag bovenaan, zoals in Canva
+  S.layerAll=rows.slice();
   const selHere=rows.filter(isSel);
   if(S.layerFilter==='overlap'&&selHere.length){
     const u=unionBox(selHere.map(layerBox).filter(Boolean));
-    rows=rows.filter(r=>r.kind==='orig'||isSel(r)||(layerBox(r)&&boxHit(layerBox(r),u)));
+    rows=rows.filter(r=>isSel(r)||(layerBox(r)&&boxHit(layerBox(r),u)));
   }
   S.layerRows=rows;
   $('#ly-title').textContent='Lagen · pagina '+pn;
@@ -4417,31 +4468,15 @@ function renderLayers(){
     const el=document.createElement('div');el.className='lrow'+(r.kind==='orig'?' lorig':'')+(r.kind==='bg'?' lbg':'')+(isSel(r)?' lsel':'');el.dataset.i=i;
     const hd=document.createElement('span');hd.className='lgrip';hd.textContent='⠿';
     if(r.kind==='orig')hd.style.visibility='hidden';else hd.title='Sleep om de volgorde te veranderen';
-    const th=r.kind==='orig'?thumbOf(P,{x:0,y:0,w:P.wPt,h:P.hPt}):r.kind==='bg'?thumbBg(r.obj):r.kind==='n'?thumbNew(r.ref):thumbOf(P,layerBox(r));
+    const th=r.kind==='bg'?thumbBg(r.obj):r.kind==='n'?thumbNew(r.ref):thumbOf(P,layerBox(r));
     const lb=document.createElement('span');lb.className='llbl';lb.innerHTML=layerLabel(r);
     el.append(hd,th,lb);
-    if(r.kind!=='orig'){const mv=document.createElement('span');mv.className='lmv';mv.innerHTML='<button data-mv="up" title="Eén laag omhoog">▲</button><button data-mv="down" title="Eén laag omlaag">▼</button>';el.appendChild(mv)}
+    {const mv=document.createElement('span');mv.className='lmv';mv.innerHTML='<button data-mv="up" title="Eén laag omhoog">▲</button><button data-mv="down" title="Eén laag omlaag">▼</button>';el.appendChild(mv)}
     list.appendChild(el);
   });
-  // objecten die nog in de pagina-inhoud zitten (kunnen in de lijst gesleept worden)
-  const lifted=new Set(S.objs.filter(o=>o.kind==='ex'&&o.page===pn&&(isLiftedEx(o)||o.del)).map(o=>o.ord));
-  let inner=(P.objs||[]).filter(o=>!o.bg&&!lifted.has(o.ord)&&o.w*o.h>=40);
-  if(S.layerFilter==='overlap'&&selHere.length){const u=unionBox(selHere.map(layerBox).filter(Boolean));inner=inner.filter(o=>boxHit({x:o.x,y:o.y,w:o.w,h:o.h},u))}
-  inner=inner.slice(0,60);
-  const ib=$('#ly-inner');ib.innerHTML='';
-  if(inner.length){
-    const tg=document.createElement('a');tg.href='#';tg.className='lsubt';tg.textContent=(S.layerOpenSub?'▾ ':'▸ ')+inner.length+' object'+(inner.length>1?'en':'')+' in de pagina-inhoud';
-    tg.title='Afbeeldingen en vormen die samen met de tekst in de PDF staan. Sleep er een naar de lijst hierboven om hem een eigen laag te geven.';
-    tg.onclick=ev=>{ev.preventDefault();S.layerOpenSub=!S.layerOpenSub;renderLayers()};ib.appendChild(tg);
-    if(S.layerOpenSub)for(const o of inner){
-      const se=document.createElement('div');se.className='lrow lsub'+(selKeys.has('x:'+pn+':'+o.ord)?' lsel':'');se.dataset.okey='x:'+pn+':'+o.ord;
-      const g2=document.createElement('span');g2.className='lgrip';g2.textContent='⠿';g2.title='Sleep naar de lijst hierboven om hem een eigen laag te geven';
-      const l2=document.createElement('span');l2.className='llbl';l2.innerHTML=esc(OLABEL[o.t]||'Object')+'<small>in de pagina-inhoud</small>';
-      se.append(g2,thumbOf(P,{x:o.x,y:o.y,w:o.w,h:o.h}),l2);ib.appendChild(se);
-    }
-  }
+  $('#ly-inner').innerHTML='';
   $('#ly-all').classList.toggle('on',S.layerFilter!=='overlap');$('#ly-ov').classList.toggle('on',S.layerFilter==='overlap');
-  $('#ly-hint').textContent=S.layerFilter==='overlap'&&!selHere.length?'Selecteer eerst iets om te zien wat ermee overlapt.':'Sleep een laag naar de plek waar je hem wilt, of gebruik ▲ ▼. Boven de pagina-inhoud = voor de tekst, eronder = achter de tekst.';
+  $('#ly-hint').textContent=S.layerFilter==='overlap'&&!selHere.length?'Selecteer eerst iets om te zien wat ermee overlapt.':'Sleep een laag naar de plek waar je hem wilt, of gebruik ▲ ▼. Tekst en afbeeldingen uit de PDF krijgen vanzelf een eigen laag zodra je ze verplaatst.';
 }
 // een laag aanklikken = selecteren
 function selectLayerRow(r,pn){
@@ -4449,6 +4484,8 @@ function selectLayerRow(r,pn){
   if(r.kind==='t'){if(S.draft&&S.draft.id===r.ref.id)return;if(S.mode!=='edit')setMode('edit');selectEdit(r.ref.id);return}
   if(r.kind==='orig')return;
   if(r.kind==='bg'){selectLayerKey('x:'+pn+':'+r.ord,pn);return}
+  if(r.kind==='po'){selectLayerKey(r.key,pn);return}
+  if(r.kind==='pt'){if(S.mode!=='edit')setMode('edit');startDraftFromLine(P,r.lines[0]);if(S.draft&&!S.draft.userFont)expandParagraph(true);P.wrap.scrollIntoView&&0;renderLayers();return}
   if(S.mode!=='obj')setMode('obj');
   S.opage=pn;S.osel=[r.kind==='n'?'o:'+r.ref.id:'x:'+pn+':'+r.ref.ord];afterObjSel(P);renderLayers();
 }
@@ -4472,16 +4509,59 @@ function placeInFull(pn,item,aboveKey){
   full.splice(at,0,item);
   return full;
 }
-function moveLayer(pn,row,item,targetIndexInShown){
-  // targetIndexInShown: positie in de getoonde lijst (zonder het gesleepte item) waar het moet komen
-  const shown=S.layerRows.filter(x=>rowKey(x)!==rowKey(row||item));
-  const next=shown[targetIndexInShown];   // het item dat onder de nieuwe plek komt
-  pushUndo();
-  if(!item){
-    if(row.kind==='bg')item=liftKey(pn,'x:'+pn+':'+row.ord);else item=row;
-    if(!item)return;
+const isPart=r=>r&&(r.kind==='pt'||r.kind==='po');
+async function convertPart(pn,r){
+  const P=S.pages[pn-1];
+  if(r.kind==='po')return liftKey(pn,r.key);
+  if(r.kind==='pt')return await paraToEdit(P,r.lines);
+  if(r.kind==='bg')return liftKey(pn,'x:'+pn+':'+r.ord);
+  return r;
+}
+// 'ins' = plek in de getoonde lijst zonder het gesleepte item (0 = helemaal bovenaan)
+async function moveLayer(pn,row,_item,ins){
+  let rows=S.layerRows||[],shown=rows.filter(x=>rowKey(x)!==rowKey(row));
+  if(S.layerAll&&S.layerAll.length!==rows.length){
+    // gefilterde lijst (Overlappend): de plek omzetten naar de volledige lijst
+    const next=shown[ins];rows=S.layerAll;shown=rows.filter(x=>rowKey(x)!==rowKey(row));
+    ins=next?shown.findIndex(x=>rowKey(x)===rowKey(next)):shown.length;if(ins<0)ins=shown.length;
   }
-  applyLayerOrder(pn,placeInFull(pn,item,next?rowKey(next):undefined));
+  ins=Math.max(0,Math.min(ins,shown.length));
+  const order=shown.slice();order.splice(ins,0,row);           // nieuwe volgorde, bovenste eerst
+  const idx=order.indexOf(row);
+  const above=order.slice(0,idx).filter(isPart),below=order.slice(idx+1).filter(isPart);
+  // alleen wat echt overlapt met het verplaatste item moet een eigen laag krijgen; de rest blijft in de pagina-inhoud
+  const rb=layerBox(row)||(row.ref?layerBox(row):null);
+  const ov=r=>{const b2=layerBox(r);return !!(rb&&b2&&boxHit(rb,b2))};
+  // verandert er niets aan wat boven of onder dit stuk uit de PDF ligt? Dan ook niets aanpassen
+  if(isPart(row)){
+    const old=rows.map(rowKey),ok=old.indexOf(rowKey(row)),nk=order.indexOf(row);
+    const same=order.every((x,k)=>x===row||!ov(x)||((old.indexOf(rowKey(x))<ok)===(k<nk)));
+    if(same){say('Dit stuk raakt op die plek niets anders, dus de volgorde verandert niets aan de pagina. Verplaats het boven of onder iets waar het overlapt.',5000);renderLayers();return 'noop'}
+  }
+  const conv=new Set();
+  if(isPart(row)||row.kind==='bg')conv.add(row);
+  const ovA=above.filter(ov),ovB=below.filter(ov);
+  if(ovA.length&&ovB.length)(ovA.length>ovB.length?ovB:ovA).forEach(r=>conv.add(r));
+  const keptA=above.filter(r=>!conv.has(r)),keptB=below.filter(r=>!conv.has(r));
+  const side=keptA.some(ov)?'above':keptB.some(ov)?'below':(keptA.length||keptB.length)?(keptA.length>=keptB.length?'above':'below'):null;
+  // afbeeldingen en vormen aan de 'verkeerde' kant krijgen ook een eigen laag (dat is exact), zodat de lijst toont wat je deed
+  if(side)for(const r of (side==='above'?below:above))if(r.kind==='po')conv.add(r);
+  const lastA=above.length?order.indexOf(above[above.length-1]):-1,firstB=below.length?order.indexOf(below[0]):-1;
+  pushUndo();
+  const fin=[];let origAt=-1;
+  for(let k=0;k<order.length;k++){
+    const r=order[k];
+    if(side==='below'&&k===firstB&&origAt<0){origAt=fin.length;fin.push({kind:'orig'})}
+    if(conv.has(r)){const it=await convertPart(pn,r);if(it)fin.push(it)}
+    else if(!isPart(r))fin.push(r);
+    if(side==='above'&&k===lastA&&origAt<0){origAt=fin.length;fin.push({kind:'orig'})}
+  }
+  if(origAt<0){
+    // niets meer zichtbaar in de pagina-inhoud: hij blijft net boven wat al achter de tekst lag
+    let j=fin.findIndex(x=>x!==row&&(x.kind==='bg'||(x.ref&&x.ref.layer==='back')));
+    if(j<0)j=fin.length;fin.splice(j,0,{kind:'orig'});
+  }
+  applyLayerOrder(pn,fin);
 }
 // klikken, ▲▼ en slepen in de lijst
 $('#s-layers').addEventListener('pointerdown',ev=>{
@@ -4511,19 +4591,20 @@ $('#s-layers').addEventListener('pointerdown',ev=>{
     line.style.top=(y-lr.top+list.scrollTop)+'px';
     const over=e.clientX>=lr.left-20&&e.clientX<=lr.right+20&&e.clientY>=lr.top-30&&e.clientY<=lr.bottom+30;line.style.display=over?'':'none';if(!over)ins=null;
   };
+  let lastE=null;
   const mv=e=>{
     if(!moving&&Math.abs(e.clientY-sy)<5)return;
-    if(!moving){moving=true;rowEl.classList.add('ldrag');line=document.createElement('div');line.className='lline';list.appendChild(line);document.body.classList.add('ldragging')}
-    place(e);
+    if(!moving){moving=true;rowEl.classList.add('ldrag');line=document.createElement('div');line.className='lline';list.appendChild(line);document.body.classList.add('ldragging');
+      scrollT=setInterval(()=>{if(!lastE)return;const lr=list.getBoundingClientRect();if(lastE.clientY<lr.top+28||lastE.clientY>lr.bottom-28)place(lastE)},40)}   // blijven scrollen zolang je aan de rand staat
+    lastE={clientX:e.clientX,clientY:e.clientY};place(e);
   };
   const up=()=>{
+    clearInterval(scrollT);
     window.removeEventListener('pointermove',mv);window.removeEventListener('pointerup',up);
     rowEl.classList.remove('ldrag');if(line)line.remove();document.body.classList.remove('ldragging');
     if(!moving){if(isSub)selectLayerKey(rowEl.dataset.okey,pn);else selectLayerRow(r,pn);return}
     if(ins==null)return;
-    if(isSub){const it=(pushUndo(),liftKey(pn,rowEl.dataset.okey));if(!it)return;const shown=S.layerRows;const next=shown[ins];applyLayerOrder(pn,placeInFull(pn,it,next?rowKey(next):undefined))}
-    else moveLayer(pn,r,null,ins);
-    say('Volgorde van de lagen aangepast.',2500);
+    moveLayer(pn,r,null,ins).then(res=>{if(res!=='noop')say('Volgorde van de lagen aangepast.',2500)});
   };
   window.addEventListener('pointermove',mv);window.addEventListener('pointerup',up);
 });
@@ -4860,7 +4941,7 @@ const rSym=newRail('rail-sym','sym','Symbool','Symbool invoegen (✓ ★ → €
 const rLayers=newRail('rail-layers','layers','Lagen','Lagen van deze pagina (L)');
 const rFonts=newRail('rail-fonts','font','Fonts','Lettertypes');
 rail.append(
-  toolBtn('t-obj','cur','Selecteren','Afbeeldingen, logo\'s, vormen en lijnen selecteren, verplaatsen en aanpassen (V)'),
+  toolBtn('t-obj','cur','Selecteren','Tekst én objecten: klik in een tekst om te typen, of op een afbeelding, logo of vorm om hem te selecteren (V)'),
   toolBtn('t-edit','text','Tekst','Bestaande tekst aanpassen: klik in een tekst en typ (T)'),
   toolBtn('t-add','addtext','Nieuw','Nieuwe tekst: klik op de pagina waar hij moet komen (N)'),
   rShapes,rImg,rSym,
@@ -4869,7 +4950,7 @@ rail.append(
   toolBtn('t-pages','pages','Pagina\'s','Paginabeheer: samenvoegen, splitsen, draaien, verwijderen, ordenen (P)'),
   rLayers,rFonts);
 $('#t-layers').hidden=true;
-main.prepend(rail);
+main.prepend(rail);$('#t-edit').hidden=true;$('#t-obj').classList.toggle('on',S.mode==='edit'||S.mode==='obj');
 rSym.onclick=e=>{e.stopPropagation();openSymPanel(rSym)};
 rSym.addEventListener('mousedown',ev=>ev.preventDefault());
 // sympaneel: ook sluiten bij klik buiten de rail-knop
@@ -5040,7 +5121,7 @@ $('#s-empty').innerHTML=`<div class="ui-empty"><div class="ei">${ico('text')}</d
 <li><kbd>Alt</kbd><span>+ klik: alleen die ene regel aanpassen</span></li>
 <li><kbd>⇧</kbd><span>+ klik op een tweede regel: samenvoegen tot één tekstblok</span></li>
 <li><kbd>✥</kbd><span>sleep het handvat linksboven om een tekstblok te verplaatsen</span></li>
-<li><kbd>V</kbd><span>afbeeldingen, logo's en vormen selecteren</span></li>
+<li><kbd>V</kbd><span>klik ook gewoon op afbeeldingen, logo's en vormen om ze te selecteren</span></li>
 <li><kbd>?</kbd><span>alle sneltoetsen</span></li></ul>`;
 for(const [id,ic,nm] of [['i-sym','sym','Symbool'],['i-rect','rect','Rechthoek'],['i-round','round','Afgerond'],['i-ell','ell','Ovaal'],['i-line','line','Lijn'],['i-arrow','arrow','Pijl']]){const b=$('#'+id);if(b)b.innerHTML=ico(ic)+nm}
 {const l=document.querySelector('label[for=i-imgfile]');if(l)l.innerHTML=ico('img')+'Afbeelding'}
@@ -5196,8 +5277,7 @@ $('#o-del').onclick=()=>deleteSelObjs();
 // ---------- sneltoetsen ----------
 const help=el('div',{id:'ui-helpback'},`<div id="ui-help"><h2>Sneltoetsen</h2><p class="muted" style="margin:0">Tip: houd je muis op een knop om te zien wat hij doet.</p><div class="kg">
 <h4>Gereedschap</h4>
-<div class="kr"><span>Tekst aanpassen</span><span><kbd>T</kbd></span></div><div class="kr"><span>Nieuwe tekst</span><span><kbd>N</kbd></span></div>
-<div class="kr"><span>Selecteren (objecten)</span><span><kbd>V</kbd></span></div><div class="kr"><span>Wissen</span><span><kbd>E</kbd></span></div>
+<div class="kr"><span>Selecteren (tekst en objecten)</span><span><kbd>V</kbd></span></div><div class="kr"><span>Nieuwe tekst</span><span><kbd>N</kbd></span></div><div class="kr"><span>Wissen</span><span><kbd>E</kbd></span></div>
 <div class="kr"><span>Paginabeheer</span><span><kbd>P</kbd></span></div><div class="kr"><span>Lagen</span><span><kbd>L</kbd></span></div>
 <h4>Bewerken</h4>
 <div class="kr"><span>Ongedaan maken</span><span><kbd>Ctrl</kbd><kbd>Z</kbd></span></div><div class="kr"><span>Opnieuw</span><span><kbd>Ctrl</kbd><kbd>Y</kbd></span></div>
@@ -5224,7 +5304,7 @@ document.addEventListener('keydown',e=>{
   const k=e.key;
   if(k==='?'){e.preventDefault();showHelp(!help.classList.contains('show'));return}
   if(!S.doc||!$('#pmback').hidden)return;
-  const m={t:'edit',n:'add',v:'obj',e:'cover'}[k.toLowerCase()];
+  const m={t:'edit',n:'add',v:'edit',e:'cover'}[k.toLowerCase()];
   if(m){e.preventDefault();setMode(m);return}
   if(k.toLowerCase()==='p'){e.preventDefault();openPages();return}
   if(k.toLowerCase()==='l'){e.preventDefault();setTab(side.dataset.tab==='layers'?'props':'layers')}
@@ -5233,7 +5313,7 @@ document.addEventListener('keydown',e=>{
 // ---------- rondleiding ----------
 const tour=el('div',{id:'tour'}),ring=el('div',{id:'tourring'});document.body.append(ring,tour);
 const STEPS=[
-  ['#rail','Gereedschap','Kies hier wat je wilt doen: tekst aanpassen, nieuwe tekst, vormen, afbeeldingen, symbolen of wissen. Of druk op T, N, V, E.'],
+  ['#rail','Gereedschap','Met Selecteren klik je zowel in tekst als op afbeeldingen en vormen. Daarnaast: nieuwe tekst, vormen, afbeeldingen, symbolen en wissen. Sneltoetsen V, N, E.'],
   ['#thumbs','Pagina\'s','Klik op een pagina om ernaartoe te gaan. Sleep om de volgorde te veranderen, rechtsklik om te draaien, dupliceren of verwijderen.'],
   ['#stage','Zwevende werkbalk','Klik in een tekst of op een object: vlak erboven verschijnt een balk met de opmaak. Rechtsklik voor nog meer.'],
   ['#side','Instellingen en lagen','Hier staan de details van wat je selecteerde. Bij Lagen schik je wat voor of achter ligt; bij Fonts beheer je lettertypes.'],
@@ -5261,6 +5341,58 @@ addEventListener('resize',()=>{if(ti>=0)showStep()});
 {const d=$('#drop');d.insertAdjacentHTML('afterbegin',`<div class="dicon">${ico('file')}</div>`);d.querySelector('h2').textContent='Open een PDF om te bewerken';
  const b=d.querySelector('label.btn');b.removeAttribute('style');b.className='btn primary';b.innerHTML=ico('open')+'PDF kiezen';pickVia(b,$('#file'))}
 
+// ---------- één selectie voor tekst en objecten: wisselt vanzelf tussen tekst en objecten ----------
+function textAtPt(P,x,y){
+  for(const l of P.lines){const b=boxOfLine(l);if(x>=b.x0-1&&x<=b.x1+1&&y>=b.top-0.5&&y<=b.bot+0.5)return true}
+  for(const e of S.edits){if(e.page!==P.n||!(e.text&&e.text.trim()))continue;const b=editBox(e);if(x>=b.x0-1&&x<=b.x1+1&&y>=b.top-0.5&&y<=b.bot+0.5)return true}
+  return false;
+}
+function objAtPt(P,x,y){
+  let best=null,ba=Infinity;
+  for(const it of objItems(P)){if(it.bg)continue;const b=aabb(nbox(it.b),rotOf(it)),pad=Math.max(0,(8/S.scale-b.w)/2),pdy=Math.max(0,(8/S.scale-b.h)/2);
+    if(x>=b.x-pad&&x<=b.x+b.w+pad&&y>=b.y-pdy&&y<=b.y+b.h+pdy){const a=b.w*b.h;if(a<ba){ba=a;best=it}}}
+  return best;
+}
+let emptyClk=null;
+// de 'klik' die de browser na dit indrukken nog stuurt (vooral bij tikken op een telefoon) niet nog eens laten tellen
+function eatNextClick(){const h=e=>{e.stopPropagation();e.preventDefault()};document.addEventListener('click',h,{capture:true,once:true});setTimeout(()=>document.removeEventListener('click',h,{capture:true}),700)}
+function redispatch(ev,type){
+  const el=document.elementFromPoint(ev.clientX,ev.clientY);if(!el)return null;
+  const o={bubbles:true,cancelable:true,clientX:ev.clientX,clientY:ev.clientY,button:0,buttons:type==='click'?0:1,pointerId:ev.pointerId||1,pointerType:ev.pointerType||'mouse',isPrimary:true};
+  el.dispatchEvent(type==='click'?new MouseEvent('click',o):new PointerEvent('pointerdown',o));return el;
+}
+$('#pages').addEventListener('pointerdown',ev=>{
+  if(ev.button!==0||!S.doc||(S.mode!=='edit'&&S.mode!=='obj')||ev.shiftKey||ev.ctrlKey||ev.metaKey||ev.altKey)return;
+  const wrap=ev.target.closest('.pg');if(!wrap)return;const P=S.pages.find(p=>p.wrap===wrap);if(!P||P.rotated)return;
+  const t=ev.target;if(t.closest('.grip,.rh,.oh,.orot,[data-h]'))return;
+  const r=P.ov.getBoundingClientRect(),x=(ev.clientX-r.left)/S.scale,y=(ev.clientY-r.top)/S.scale;
+  // dubbelklik op een lege plek: de achtergrond selecteren
+  if(!t.closest('.hit,.ed,.ohit.sel')&&!textAtPt(P,x,y)&&!objAtPt(P,x,y)){
+    const now=Date.now(),L=emptyClk;emptyClk={t:now,x:ev.clientX,y:ev.clientY,n:P.n};
+    if(L&&L.n===P.n&&now-L.t<450&&Math.hypot(L.x-ev.clientX,L.y-ev.clientY)<8){
+      const bg=objItems(P).find(it=>it.bg);
+      if(bg){ev.stopPropagation();ev.preventDefault();emptyClk=null;if(S.draft)finishDraft();if(S.mode!=='obj')setMode('obj');S.opage=P.n;S.osel=[bg.key];afterObjSel(P);return}
+    }
+  }
+  if(S.mode==='edit'){
+    if(t.closest('.hit')||t.closest('.ed'))return;          // tekst gaat voor
+    if(!objAtPt(P,x,y))return;
+    ev.stopPropagation();ev.preventDefault();
+    if(S.draft)finishDraft();if(S.group)endGroup(true);
+    setMode('obj');redispatch(ev,'pointerdown');eatNextClick();
+  }else{
+    if(t.closest('.ohit.sel'))return;                        // een geselecteerd object blijft verplaatsbaar
+    if(!textAtPt(P,x,y))return;
+    ev.stopPropagation();ev.preventDefault();
+    setMode('edit');
+    const el=document.elementFromPoint(ev.clientX,ev.clientY);
+    if(el&&(el.closest('.hit')||el.closest('.ed')))redispatch(ev,'click');
+    eatNextClick();
+  }
+},true);
+
+// klik naast de pagina: alles loslaten
+$('#stage').addEventListener('click',ev=>{if((ev.target.id==='stage'||ev.target.id==='pages')&&S.mode==='obj'){S.osel=[];setMode('edit')}});
 // ---------- haakjes in de bestaande code ----------
 const lsOrig=layersSoon;layersSoon=function(){lsOrig.apply(this,arguments);thumbsSoon()};
 const rrOrig=rerenderBase;rerenderBase=async function(){const r=await rrOrig.apply(this,arguments);thumbsSoon(300);return r};
@@ -5307,7 +5439,7 @@ function tick(){
     if(S.doc!==lastDoc){lastDoc=S.doc;thSig='';thumbsSoon(400);if(S.doc&&!LS.get('pdfb-tour'))setTimeout(()=>{if(ti<0&&!LS.get('pdfb-tour'))startTour()},1200)}
     const lbl=propsLabel();if(lbl!==lastLbl){lastLbl=lbl;stabs.children[0].textContent=lbl}
     placeBar();
-    const es=S.doc?(S.mode==='obj'?'· Selecteren: klik op een afbeelding of vorm':S.mode==='add'?'· Nieuwe tekst: klik op de pagina':S.mode==='cover'?'· Wissen: sleep een vak':'· Tekst: klik in een tekst om te typen'):'';
+    const es=S.doc?(S.mode==='obj'||S.mode==='edit'?'· Selecteren: klik in een tekst om te typen, of op een afbeelding of vorm':S.mode==='add'?'· Nieuwe tekst: klik op de pagina':S.mode==='cover'?'· Wissen: sleep een vak':'· Tekst: klik in een tekst om te typen'):'';
     if(es!==lastEd){lastEd=es;$('#st-ed').textContent=es;markCurrent()}
     for(const [id] of SL){const n=$('#'+id),r=$('#'+id+'-rg');if(r&&document.activeElement!==r&&r.value!==n.value&&n.value!=='')r.value=n.value}
   }catch(e){}
