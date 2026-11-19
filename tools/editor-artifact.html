@@ -183,6 +183,14 @@
   html[data-theme=dark]{--ink:#e7e9ee;--muted:#9aa1b0;--line:#2c313c;--accent:#8582ff;--acc2:#2c2b52;--accd:#9a97ff;--bg:#16181d;--panel:#1e2128;--field:#262a33;--fline:#3a404c;--hover:#2a2e38;--soft:#23262e;--shadow:0 8px 28px #0008,0 0 0 1px var(--line);color-scheme:dark}
   body{background:var(--bg);color:var(--ink);font:13.5px/1.4 "Segoe UI Variable Text","Segoe UI",Inter,system-ui,-apple-system,Roboto,sans-serif}
   .ui-ico{pointer-events:none}
+  .cropbox{position:absolute;z-index:8}
+  .cropsvg{position:absolute;left:0;top:0;overflow:visible;pointer-events:none}
+  .cropwin{position:absolute;cursor:move}
+  .crh{position:absolute;background:#fff;border:2px solid #1d2433;box-shadow:0 1px 4px #0005;z-index:2}
+  .crh.crc{width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:3px}
+  .crh.cre{width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%}
+  #fb-crop .shp{width:32px}
+  #fb-crop input[type=range]{width:90px;accent-color:var(--accent)}
   label.btn,label.ri,label.pc,#openbtn{cursor:pointer;-webkit-tap-highlight-color:transparent}
   .ui-ico{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none;display:block}
   button,.btn{border-radius:9px;border:1px solid var(--fline);background:var(--field);color:var(--ink)}
@@ -499,7 +507,8 @@
       <label style="margin:12px 0 4px">Schikken<i class="info" tabindex="0" data-tip="Bepaal wat bovenop wat ligt, zoals in Word.&#10;Voor tekst: boven de tekst en afbeeldingen van de pagina.&#10;Achter tekst: erachter, zoals een achtergrond of kader.&#10;Naar voren/achteren: één laag verschuiven ten opzichte van wat ermee overlapt.">i</i></label>
       <div class="arr"><button id="oa-front" title="Helemaal naar voren: boven alles"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><rect x="1.5" y="8" width="7" height="6.5" fill="none"/><rect x="5" y="2" width="9.5" height="8" fill="currentColor" fill-opacity=".85"/></svg></button><button id="oa-forward" title="Naar voren: één laag omhoog"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><rect x="1.5" y="6.5" width="8" height="8"/><rect x="6.5" y="1.5" width="8" height="8" fill="currentColor" fill-opacity=".85"/><path d="M3 3.5h3M3 3.5v3" stroke-linecap="round"/></svg></button><button id="oa-backward" title="Naar achteren: één laag omlaag"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><rect x="6.5" y="1.5" width="8" height="8"/><rect x="1.5" y="6.5" width="8" height="8" fill="currentColor" fill-opacity=".25"/><path d="M13 12.5h-3M13 12.5v-3" stroke-linecap="round"/></svg></button><button id="oa-back" title="Helemaal naar achteren: achter alles, ook achter de tekst van de pagina"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><rect x="5" y="2" width="9.5" height="8"/><rect x="1.5" y="8" width="7" height="6.5" fill="currentColor" fill-opacity=".25"/></svg></button><button id="oa-infront">Voor tekst</button><button id="oa-behind">Achter tekst</button></div>
       <div class="btns">
-        <button id="o-crop" title="De afbeelding is bijgesneden. Toon de hele afbeelding, of zet de uitsnede terug.">Uitsnede weghalen</button>
+        <button id="o-cropedit" title="Bijsnijden: sleep de randen, kies een vorm (ook dubbelklikken op de afbeelding)">Bijsnijden</button>
+        <button id="o-crop" title="Toon de hele afbeelding, of zet de oorspronkelijke uitsnede terug.">Uitsnede weghalen</button>
         <label class="btn" for="o-imgfile" id="o-replace">Andere afbeelding…</label><input id="o-imgfile" type="file" accept="image/*" hidden>
         <button id="o-del">Verwijderen</button>
         <button id="o-reset">Terugzetten</button>
@@ -2613,6 +2622,7 @@ function syncUI(){scheduleSave();if(typeof layersSoon==='function')layersSoon();
   $('#undo').disabled=!(S.undo.length||(S.draft&&(DH.i>0||!S.draftExisting)));$('#redo').disabled=!(S.redo.length||(S.draft&&DH.i<DH.h.length-1))}
 
 function setMode(m){
+  if(S.crop&&m!=='obj')endCrop();
   if(S.group)endGroup(true);
   if(m==='obj'&&S.draft)commit();
   if(m!=='obj'){S.osel=[];S.odrag=null}
@@ -2821,7 +2831,7 @@ async function buildPdfBytes(){
 // laagvolgorde op een pagina: [achter de tekst] , de oorspronkelijke inhoud , [voor de tekst]
 const hashOf=o=>JSON.stringify(o,(k,v)=>k&&k[0]==='_'?undefined:v);
 const exMoved=o=>{const a=o.b0,b=o.b;return !!(a&&b&&(Math.abs(a.x-b.x)>1e-3||Math.abs(a.y-b.y)>1e-3||Math.abs(a.w-b.w)>1e-3||Math.abs(a.h-b.h)>1e-3))};
-const isLiftedEx=o=>!!(o.lift||o.img||o.rot||o.noclip||exMoved(o));
+const isLiftedEx=o=>!!(o.lift||o.img||o.rot||o.noclip||(o.crop&&cropOn(o.crop))||exMoved(o));
 const zDef=(k,r)=>r.z!=null?r.z:(k==='x'?5e5:k==='n'?1e6:2e6)+(r.id||0);
 function layerList(pn,mode){   // mode: 'export' | 'preview' (zonder open tekstblok) | 'arrange' (met open tekstblok)
   const L=[],dr=S.draft&&S.draft.page===pn?S.draft:null;
@@ -3335,6 +3345,7 @@ function removeTextInRects(pdf,page,rects,killRects,objOps,guard,opts7){
   const lifted=(op,body)=>{
     const T=op.M||[1,0,0,1,0,0];let s='\nq\n';
     if(!op.noclip)for(const c of clips){const M=mmul(c.ctm,T);s+=fmtM(M)+' cm\n'+c.txt+'\n'+c.rule+' n\n'+fmtM(minv(M))+' cm\n'}
+    if(op.crop)s+=fmtM(T)+' cm\n'+op.crop+'\nW n\n'+fmtM(minv(T))+' cm\n';
     s+=gsT.gs+gsT.fc+gsT.sc+Object.values(gsT.m).join('')+'\n';
     const M2=mmul(ctm,T);s+=fmtM(M2)+' cm\n';
     if(op.fill)s+=rgbOps(op.fill)+' rg\n';if(op.stroke)s+=rgbOps(op.stroke)+' RG\n';if(op.lw!=null)s+=(op.lw/scl(M2)).toFixed(4)+' w\n';
@@ -3626,6 +3637,7 @@ function newObjEl(o,P){
     const im=document.createElement('img');im.className='oimg';im.src=blobUrl(o.img);im.draggable=false;
     Object.assign(im.style,{left:b.x*sc+'px',top:b.y*sc+'px',width:b.w*sc+'px',height:b.h*sc+'px'});
     if(o.rot)Object.assign(im.style,{transform:`rotate(${o.rot}deg)`,transformOrigin:'50% 50%'});
+    if(o.crop&&cropOn(o.crop)&&!o.cropEditing)im.style.clipPath=`path('${cropSvg(cropCmds(cropWin(b,o.crop),o.crop),b.x,b.y,sc)}')`;
     return im;
   }
   const NS='http://www.w3.org/2000/svg',svg=document.createElementNS(NS,'svg');
@@ -3638,6 +3650,22 @@ function newObjEl(o,P){
   else{const g=arrowGeom(o),c=o.stroke||'#000000';mk('line',{x1:g.x1,y1:g.y1,x2:g.x2,y2:g.y2,stroke:c,'stroke-width':sw||1});if(g.head)mk('polygon',{points:g.head.map(p=>p.join(',')).join(' '),fill:c})}
   return svg;
 }
+// ---------- zelf bijsnijden: uitsnede als rechthoek, afgeronde rechthoek, ovaal, cirkel, driehoek, ruit of zeshoek ----------
+const CROPSHAPES=[['rect','Rechthoek'],['round','Afgeronde hoeken'],['ell','Ovaal'],['circle','Cirkel'],['tri','Driehoek'],['diamond','Ruit'],['hex','Zeshoek']];
+const cropOn=c=>!!c&&(c.l>1e-4||c.t>1e-4||c.r>1e-4||c.b>1e-4||(c.shape&&c.shape!=='rect'));
+function cropWin(b,c){b=nbox(b);return {x:b.x+c.l*b.w,y:b.y+c.t*b.h,w:b.w*Math.max(0.001,1-c.l-c.r),h:b.h*Math.max(0.001,1-c.t-c.b)}}
+function cropCmds(w,c){
+  const {x,y}=w,W=w.w,H=w.h,s=c.shape||'rect';
+  if(s==='round'){const r=Math.min((c.rad==null?0.15:c.rad)*Math.min(W,H),W/2,H/2),k=0.5523*r;
+    return [['M',x+r,y],['L',x+W-r,y],['C',x+W-r+k,y,x+W,y+r-k,x+W,y+r],['L',x+W,y+H-r],['C',x+W,y+H-r+k,x+W-r+k,y+H,x+W-r,y+H],['L',x+r,y+H],['C',x+r-k,y+H,x,y+H-r+k,x,y+H-r],['L',x,y+r],['C',x,y+r-k,x+r-k,y,x+r,y],['Z']]}
+  if(s==='ell'||s==='circle'){const rx=W/2,ry=H/2,cx=x+rx,cy=y+ry,kx=0.5523*rx,ky=0.5523*ry;
+    return [['M',cx-rx,cy],['C',cx-rx,cy-ky,cx-kx,cy-ry,cx,cy-ry],['C',cx+kx,cy-ry,cx+rx,cy-ky,cx+rx,cy],['C',cx+rx,cy+ky,cx+kx,cy+ry,cx,cy+ry],['C',cx-kx,cy+ry,cx-rx,cy+ky,cx-rx,cy],['Z']]}
+  const poly=s==='tri'?[[x+W/2,y],[x+W,y+H],[x,y+H]]:s==='diamond'?[[x+W/2,y],[x+W,y+H/2],[x+W/2,y+H],[x,y+H/2]]:s==='hex'?[[x+W*0.25,y],[x+W*0.75,y],[x+W,y+H/2],[x+W*0.75,y+H],[x+W*0.25,y+H],[x,y+H/2]]:[[x,y],[x+W,y],[x+W,y+H],[x,y+H]];
+  return [['M',...poly[0]],...poly.slice(1).map(p=>['L',...p]),['Z']];
+}
+// als PDF-pad (y omhoog) of als SVG-pad (in schermpixels, t.o.v. een hoekpunt)
+function cropPdf(cmds,P){const f=v=>(+v).toFixed(3),X=v=>f(P.x0+v),Y=v=>f(P.y1-v);return cmds.map(c=>c[0]==='M'?X(c[1])+' '+Y(c[2])+' m':c[0]==='L'?X(c[1])+' '+Y(c[2])+' l':c[0]==='C'?[X(c[1]),Y(c[2]),X(c[3]),Y(c[4]),X(c[5]),Y(c[6])].join(' ')+' c':'h').join('\n')}
+function cropSvg(cmds,ox,oy,s){const f=(v,o)=>((v-o)*s).toFixed(2);return cmds.map(c=>c[0]==='Z'?'Z':c[0]+' '+c.slice(1).map((v,i)=>f(v,i%2?oy:ox)).join(' ')).join(' ')}
 // klikvlakken, selectie en handvatten (alleen in de modus Objecten)
 function paintObjLayer(P){
   const sc=S.scale,items=objItems(P).sort((a,b)=>nbox(b.b).w*nbox(b.b).h-nbox(a.b).w*nbox(a.b).h);
@@ -3655,6 +3683,7 @@ function paintObjLayer(P){
   if(si.length){
     const H=(x,y,h,cur)=>{const e=document.createElement('div');e.className='oh';e.dataset.h=h;e.style.left=x*sc+'px';e.style.top=y*sc+'px';e.style.cursor=cur;P.ov.appendChild(e)};
     if(si.length===1&&isLineObj(si[0])&&!rotOf(si[0])){const b=si[0].b;H(b.x,b.y,'p1','crosshair');H(b.x+b.w,b.y+b.h,'p2','crosshair')}
+    else if(si.length===1&&S.crop&&S.crop.key===si[0].key){paintCrop(P,si[0])}
     else if(si.length===1){
       // één object: handvatten draaien mee, plus het draaihandvat erboven
       const it=si[0],b=nbox(it.b),deg=rotOf(it),cx=b.x+b.w/2,cy=b.y+b.h/2,r=deg*Math.PI/180,cs=Math.cos(r),sn=Math.sin(r);
@@ -3686,13 +3715,19 @@ function cropCanvas(P,b){
   const d=P.dpr,sc=S.scale,x=Math.max(0,Math.floor(b.x*sc*d)),y=Math.max(0,Math.floor(b.y*sc*d)),w=Math.max(1,Math.ceil(Math.max(b.w,1)*sc*d)),h=Math.max(1,Math.ceil(Math.max(b.h,1)*sc*d));
   const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(P.cv,x,y,w,h,0,0,w,h);c.className='ghost';return c;
 }
-function afterObjSel(P){if(P)S.opage=P.n;repaintAll();fillObjForm();layersSoon()}
+function afterObjSel(P){if(S.crop&&!(S.osel.length===1&&S.osel[0]===S.crop.key))endCrop();if(P)S.opage=P.n;repaintAll();fillObjForm();layersSoon()}
 function objChanged(P){
   for(const Q of (P?[P]:S.pages)){paintOverlay(Q);clearTimeout(Q.rt);Q.rt=setTimeout(()=>rerenderBase(Q),120)}
   fillObjForm();syncUI();
 }
 function objPointerDown(ev,P){
   const t=ev.target,h=t.dataset&&t.dataset.h,key=t.dataset&&t.dataset.okey;
+  if(S.crop){if(h&&h[0]==='c'){startCropDrag(ev,P,h);return}endCrop()}
+  // dubbelklik op een afbeelding: bijsnijden
+  if(key&&!ev.shiftKey&&!ev.ctrlKey&&!ev.metaKey){
+    const L=S.lastObjDown,now=Date.now();S.lastObjDown={key,t:now,x:ev.clientX,y:ev.clientY};
+    if(L&&L.key===key&&now-L.t<450&&Math.hypot(L.x-ev.clientX,L.y-ev.clientY)<8&&S.osel.length===1&&S.osel[0]===key&&canCrop(objItemByKey(key))){S.lastObjDown=null;ev.preventDefault();startCrop();return}
+  }
   if(h){startObjResize(ev,P,h);return}
   if(key){
     // achtergrond: klikken selecteert hem, slepen trekt een selectiekader (zoals in Canva)
@@ -3867,9 +3902,10 @@ function fillObjForm(){
   $('#o-nofill').checked=shapes.length>0&&shapes.every(i=>i.ed&&i.ed.nofill);
   const img=one&&['image','img','form'].includes(one.t);
   $('#o-replace').style.display=img?'':'none';
-  const cut=one&&!one.isNew&&one.src&&one.src.clipped;
-  $('#o-crop').style.display=cut?'':'none';
-  if(cut)$('#o-crop').textContent=one.ed&&one.ed.noclip?'Uitsnede terugzetten':'Uitsnede weghalen';
+  const own=one&&one.ed&&one.ed.crop&&cropOn(one.ed.crop),orig=one&&!one.isNew&&one.src&&one.src.clipped;
+  $('#o-cropedit').style.display=one&&canCrop(one)?'':'none';$('#o-cropedit').textContent=S.crop?'Klaar met bijsnijden':'Bijsnijden';
+  $('#o-crop').style.display=(own||orig)&&!S.crop?'':'none';
+  $('#o-crop').textContent=own||(orig&&!(one.ed&&one.ed.noclip))?'Uitsnede weghalen':'Uitsnede terugzetten';
   $('#o-reset').style.display=items.some(i=>!i.isNew&&i.ed)?'':'none';
   let desc='';
   if(one&&!one.isNew){desc=one.bg?'Achtergrond van de pagina (een vlak of afbeelding over de hele pagina).':one.t==='image'?'Afbeelding uit de PDF.':one.t==='form'?'Groep uit de PDF (vaak een logo of een ingevoegde afbeelding).':'Getekende vorm uit de PDF.';if(one.ed&&one.ed.img)desc+=' Vervangen door een nieuwe afbeelding.'}
@@ -3910,11 +3946,86 @@ $('#o-stroke').addEventListener('input',()=>setShapeProp('stroke',$('#o-stroke')
 $('#o-lw').addEventListener('change',()=>{const v=parseFloat($('#o-lw').value);if(v>=0)setShapeProp('lw',v)});
 $('#o-nofill').addEventListener('change',()=>setShapeProp('nofill',$('#o-nofill').checked));
 $('#o-del').onclick=deleteSelObjs;
+function cropItem(){const it=S.crop&&objItemByKey(S.crop.key);return it||null}
+function canCrop(it){return !!(it&&(it.t==='image'||it.t==='img')&&!it.bg)}
+function startCrop(){
+  const its=selItems();if(its.length!==1||!canCrop(its[0])){say('Selecteer één afbeelding om bij te snijden.',3000);return}
+  const it=its[0];if(S.draft)finishDraft();
+  pushUndo();const ed=ensureObjEd(it);
+  if(!ed.crop)ed.crop={l:0,t:0,r:0,b:0,shape:'rect',rad:0.15};
+  ed.cropEditing=true;S.crop={key:it.key,page:it.P.n};
+  objChanged(it.P);
+}
+function endCrop(){
+  if(!S.crop)return;const it=cropItem();S.crop=null;
+  if(it){const ed=it.ed;if(ed){delete ed.cropEditing;if(ed.crop&&!cropOn(ed.crop))delete ed.crop}objChanged(it.P)}
+  else repaintAll();
+}
+function setCropShape(shape){
+  const it=cropItem();if(!it)return;const c=it.ed.crop;c.shape=shape;
+  if(shape==='circle'){const b=nbox(it.b),w=cropWin(it.b,c),side=Math.min(w.w,w.h),cx=w.x+w.w/2,cy=w.y+w.h/2;
+    c.l=(cx-side/2-b.x)/b.w;c.r=1-(cx+side/2-b.x)/b.w;c.t=(cy-side/2-b.y)/b.h;c.b=1-(cy+side/2-b.y)/b.h}
+  objChanged(it.P);
+}
+function resetCrop(){const it=cropItem();if(!it)return;Object.assign(it.ed.crop,{l:0,t:0,r:0,b:0});if(it.ed.crop.shape==='circle')setCropShape('circle');else objChanged(it.P)}
+// het bijsnijkader: de hele afbeelding, wat wegvalt donkerder, met handvatten op de uitsnede
+function paintCrop(P,it){
+  const sc=S.scale,b=nbox(it.b),c=it.ed.crop,deg=rotOf(it),w=cropWin(b,c),NS='http://www.w3.org/2000/svg';
+  const box=document.createElement('div');box.className='cropbox';
+  Object.assign(box.style,{left:b.x*sc+'px',top:b.y*sc+'px',width:b.w*sc+'px',height:b.h*sc+'px'});
+  if(deg)Object.assign(box.style,{transform:`rotate(${deg}deg)`,transformOrigin:'50% 50%'});
+  const svg=document.createElementNS(NS,'svg');svg.setAttribute('width',b.w*sc);svg.setAttribute('height',b.h*sc);svg.setAttribute('class','cropsvg');
+  const shp=cropSvg(cropCmds(w,c),b.x,b.y,sc);
+  const dim=document.createElementNS(NS,'path');dim.setAttribute('d',`M0 0 H${b.w*sc} V${b.h*sc} H0 Z `+shp);dim.setAttribute('fill-rule','evenodd');dim.setAttribute('fill','rgba(20,24,32,.55)');svg.appendChild(dim);
+  const ol=document.createElementNS(NS,'path');ol.setAttribute('d',shp);ol.setAttribute('fill','none');ol.setAttribute('stroke','#fff');ol.setAttribute('stroke-width','2');ol.setAttribute('stroke-dasharray','6 4');svg.appendChild(ol);
+  box.appendChild(svg);
+  const win=document.createElement('div');win.className='cropwin';win.dataset.h='cpan';win.title='Sleep om de afbeelding in het kader te verschuiven';
+  Object.assign(win.style,{left:(w.x-b.x)*sc+'px',top:(w.y-b.y)*sc+'px',width:w.w*sc+'px',height:w.h*sc+'px'});box.appendChild(win);
+  const x0=(w.x-b.x)*sc,y0=(w.y-b.y)*sc,x1=x0+w.w*sc,y1=y0+w.h*sc,xm=(x0+x1)/2,ym=(y0+y1)/2;
+  for(const [x,y,h,cur] of [[x0,y0,'cnw','nwse-resize'],[xm,y0,'cn','ns-resize'],[x1,y0,'cne','nesw-resize'],[x1,ym,'ce','ew-resize'],[x1,y1,'cse','nwse-resize'],[xm,y1,'cs','ns-resize'],[x0,y1,'csw','nesw-resize'],[x0,ym,'cw','ew-resize']]){
+    const e=document.createElement('div');e.className='crh '+(h.length===3?'crc':'cre');e.dataset.h=h;Object.assign(e.style,{left:x+'px',top:y+'px',cursor:cur});box.appendChild(e)}
+  P.ov.appendChild(box);
+}
+function startCropDrag(ev,P,h){
+  ev.preventDefault();ev.stopPropagation();
+  const it=cropItem();if(!it)return;const ed=it.ed,c0={...ed.crop},b0={...nbox(it.b)},deg=rotOf(it),r=-deg*Math.PI/180,cs=Math.cos(r),sn=Math.sin(r),sx=ev.clientX,sy=ev.clientY,MIN=0.04;
+  const mv=e=>{
+    const dx=(e.clientX-sx)/S.scale,dy=(e.clientY-sy)/S.scale;
+    let lx=dx*cs-dy*sn,ly=dx*sn+dy*cs;              // verschuiving in de richting van de (gedraaide) afbeelding
+    const c={...c0};
+    if(h==='cpan'){
+      lx=Math.max(-c0.r*b0.w,Math.min(c0.l*b0.w,lx));ly=Math.max(-c0.b*b0.h,Math.min(c0.t*b0.h,ly));
+      c.l=c0.l-lx/b0.w;c.r=c0.r+lx/b0.w;c.t=c0.t-ly/b0.h;c.b=c0.b+ly/b0.h;
+      const rr=deg*Math.PI/180,gx=lx*Math.cos(rr)-ly*Math.sin(rr),gy=lx*Math.sin(rr)+ly*Math.cos(rr);
+      ed.b={...b0,x:b0.x+gx,y:b0.y+gy};
+    }else{
+      const fx=lx/b0.w,fy=ly/b0.h;
+      if(h.includes('w'))c.l=Math.max(0,Math.min(1-c0.r-MIN,c0.l+fx));
+      if(h.includes('e')&&h!=='cnw'&&h!=='csw'&&h!=='cw')c.r=Math.max(0,Math.min(1-c0.l-MIN,c0.r-fx));
+      if(h==='cn'||h==='cnw'||h==='cne')c.t=Math.max(0,Math.min(1-c0.b-MIN,c0.t+fy));
+      if(h==='cs'||h==='csw'||h==='cse')c.b=Math.max(0,Math.min(1-c0.t-MIN,c0.b-fy));
+      if(c.shape==='circle'){   // cirkel blijft rond: de kant die je sleept bepaalt de grootte
+        const W=b0.w*(1-c.l-c.r),H=b0.h*(1-c.t-c.b),side=(h==='cn'||h==='cs')?H:(h==='ce'||h==='cw')?W:Math.min(W,H);
+        const fitW=side/b0.w,fitH=side/b0.h;
+        if(h.includes('w'))c.l=1-c.r-fitW;else c.r=1-c.l-fitW;
+        if(h==='cn'||h==='cnw'||h==='cne')c.t=1-c.b-fitH;else c.b=1-c.t-fitH;
+        if(c.l<0||c.r<0||c.t<0||c.b<0)return;
+      }
+    }
+    Object.assign(ed.crop,{l:c.l,t:c.t,r:c.r,b:c.b});paintOverlay(P);
+  };
+  const up=()=>{window.removeEventListener('pointermove',mv);window.removeEventListener('pointerup',up);objChanged(P)};
+  window.addEventListener('pointermove',mv);window.addEventListener('pointerup',up);
+}
+$('#o-cropedit').onclick=()=>{if(S.crop)endCrop();else startCrop()};
+document.addEventListener('keydown',e=>{if(S.crop&&(e.key==='Enter'||e.key==='Escape')&&!/^(INPUT|TEXTAREA|SELECT)$/.test((e.target&&e.target.tagName)||'')){e.preventDefault();e.stopPropagation();endCrop()}},true);
 $('#o-crop').onclick=()=>{
-  const it=selItems()[0];if(!it||it.isNew||!it.src||!it.src.clipped)return;
-  pushUndo();const ed=ensureObjEd(it);ed.noclip=!ed.noclip;
+  const it=selItems()[0];if(!it)return;const ed0=it.ed,own=ed0&&ed0.crop&&cropOn(ed0.crop),orig=!it.isNew&&it.src&&it.src.clipped;
+  if(!own&&!orig)return;
+  pushUndo();const ed=ensureObjEd(it);
+  if(own||(orig&&!ed.noclip)){delete ed.crop;if(orig)ed.noclip=true}else ed.noclip=false;
   objChanged(it.P);repaintAll();fillObjForm();syncUI();
-  say(ed.noclip?'Uitsnede weggehaald: je ziet nu de hele afbeelding.':'Uitsnede teruggezet.',3000);
+  say(orig&&!ed.noclip?'Uitsnede teruggezet.':'Uitsnede weggehaald: je ziet nu de hele afbeelding.',3000);
 };
 $('#o-done').onclick=()=>{S.osel=[];afterObjSel(null)};
 $('#o-reset').onclick=()=>{
@@ -4008,6 +4119,7 @@ async function objOpsFor(n,pdf,page){
       if(Math.abs(a.x-b.x)>1e-3||Math.abs(a.y-b.y)>1e-3||Math.abs(a.w-b.w)>1e-3||Math.abs(a.h-b.h)>1e-3||o.rot)op.M=boxT(P,a,b);
       if(o.rot)op.M=mmul(op.M,rotM(P,b,o.rot));
       if(o.fill)op.fill=o.fill;if(o.stroke)op.stroke=o.stroke;if(o.lw!=null)op.lw=o.lw;if(o.nofill)op.nofill=true;if(o.lift)op.lift=true;if(o.noclip){op.noclip=true;op.lift=true}
+      if(o.crop&&cropOn(o.crop)){op.lift=true;if(!o.cropEditing)op.crop=cropPdf(cropCmds(cropWin(a,o.crop),o.crop),P)}   // uitsnede in de oorspronkelijke plaats; de verplaatsing doet de rest
       if(o.img){
         // de nieuwe afbeelding vult het oude vak; het verschil in vorm zit in de verplaatsing
         const im=await embedBlob(pdf,o.img);op.img=page.node.newXObject('ImR',im.ref).toString().slice(1);
@@ -4054,7 +4166,15 @@ async function drawNewObj(pdf,page,P,o){
   }
   const {rgb}=PDFLib,col=h=>{const [r,g,b]=rgbOf(h);return rgb(r/255,g/255,b/255)};
   const b=nbox(o.b),X=P.x0+b.x,Yt=P.y1-b.y;
-  if(o.t==='img'){const im=await embedBlob(pdf,o.img);page.drawImage(im,{x:X,y:Yt-b.h,width:b.w,height:b.h});return}
+  if(o.t==='img'){
+    const im=await embedBlob(pdf,o.img),cut=o.crop&&cropOn(o.crop)&&!o.cropEditing;
+    if(cut){const L=PDFLib,cm=cropCmds(cropWin(b,o.crop),o.crop),ops=[L.pushGraphicsState()];
+      for(const c of cm){if(c[0]==='M')ops.push(L.moveTo(P.x0+c[1],P.y1-c[2]));else if(c[0]==='L')ops.push(L.lineTo(P.x0+c[1],P.y1-c[2]));else if(c[0]==='C')ops.push(L.appendBezierCurve(P.x0+c[1],P.y1-c[2],P.x0+c[3],P.y1-c[4],P.x0+c[5],P.y1-c[6]));else ops.push(L.closePath())}
+      ops.push(L.clip(),L.endPath());page.pushOperators(...ops)}
+    page.drawImage(im,{x:X,y:Yt-b.h,width:b.w,height:b.h});
+    if(cut)page.pushOperators(PDFLib.popGraphicsState());
+    return;
+  }
   const fill=o.fill&&!o.nofill?col(o.fill):undefined,bc=o.stroke&&o.lw>0?col(o.stroke):undefined,bw=bc?o.lw:0;
   if(o.t==='rect')page.drawRectangle({x:X,y:Yt-b.h,width:b.w,height:b.h,color:fill,borderColor:bc,borderWidth:bw});
   else if(o.t==='ell')page.drawEllipse({x:X+b.w/2,y:Yt-b.h/2,xScale:b.w/2,yScale:b.h/2,color:fill,borderColor:bc,borderWidth:bw});
@@ -5056,7 +5176,15 @@ const parB=$('#r-par');parB.innerHTML=ico('para')+'Alinea-instellingen…';parB.
 
 // ---------- zwevende werkbalk ----------
 const fbar=el('div',{id:'fbar'}),fT=el('div',{class:'fg',id:'fb-text'}),fO=el('div',{class:'fg',id:'fb-obj'});
-const more=el('div',{id:'fb-more'});fbar.append(fT,fO);document.body.append(fbar,more);
+const more=el('div',{id:'fb-more'});const fC=el('div',{class:'fg',id:'fb-crop'});
+const SHPI={rect:'<rect x="4" y="5" width="16" height="14" rx="1"/>',round:'<rect x="4" y="5" width="16" height="14" rx="5"/>',ell:'<ellipse cx="12" cy="12" rx="9" ry="6.5"/>',circle:'<circle cx="12" cy="12" r="8"/>',tri:'<path d="M12 4l9 16H3z"/>',diamond:'<path d="M12 3l9 9-9 9-9-9z"/>',hex:'<path d="M7.5 4h9l4.5 8-4.5 8h-9L3 12z"/>'};
+fC.appendChild(el('span',{class:'tl'},'Bijsnijden'));
+for(const [k,nm] of CROPSHAPES){const b=el('button',{class:'shp',title:nm},'<svg class="ui-ico" viewBox="0 0 24 24">'+SHPI[k]+'</svg>');b.dataset.shape=k;b.addEventListener('mousedown',e=>e.preventDefault());b.onclick=()=>setCropShape(k);fC.appendChild(b)}
+const radR=el('input',{type:'range',min:0.02,max:0.5,step:0.01,title:'Ronding van de hoeken'});radR.addEventListener('input',()=>{const it=cropItem();if(!it)return;it.ed.crop.rad=+radR.value;paintOverlay(it.P)});radR.addEventListener('change',()=>{const it=cropItem();if(it)objChanged(it.P)});
+const resB=el('button',{title:'Hele afbeelding (uitsnede leegmaken)'},'Herstellen');resB.onclick=()=>resetCrop();
+const doneB=el('button',{class:'primary',title:'Klaar (Enter)'},'Klaar');doneB.style.color='#fff';doneB.onclick=()=>endCrop();
+fC.append(el('span',{class:'vs'}),radR,resB,doneB);
+fbar.append(fT,fO,fC);document.body.append(fbar,more);
 const vs=()=>el('span',{class:'vs'});
 const moreB=el('button',{id:'fb-morebtn',title:'Meer opmaak'},ico('dots'));
 const clrOf=id=>document.getElementById(id).closest('label');
@@ -5078,7 +5206,7 @@ const proxyClr=(target,title)=>{const l=el('label',{class:'pc',title}),sw=el('sp
   i.addEventListener('change',()=>{const r=$('#'+target);r.dispatchEvent(new Event('change',{bubbles:true}))});return l};
 const repl=el('label',{class:'pc',title:'Andere afbeelding…'},ico('swap'));repl.htmlFor='o-imgfile';repl.dataset.t='o-replace';
 const oTitle=el('span',{class:'tl',id:'fb-otitle'});
-const cropB=proxyBtn('o-crop','crop','Uitsnede weghalen / terugzetten');
+const cropB=proxyBtn('o-cropedit','crop','Bijsnijden');
 const dupB=el('button',{title:'Dupliceren (Ctrl+D)'},ico('dup'));dupB.onclick=()=>duplicateSel();dupB.dataset.dup='1';
 fO.append(oTitle,proxyClr('o-fill','Vulkleur'),proxyClr('o-stroke','Lijnkleur'),vs(),proxyBtn('o-rl','rl','90° naar links draaien'),proxyBtn('o-rr','rr','90° naar rechts draaien'),repl,cropB,dupB,vs(),
   proxyBtn('oa-forward','fwd','Naar voren'),proxyBtn('oa-backward','bwd','Naar achteren'),vs(),proxyBtn('o-del','trash','Verwijderen (Delete)'));
@@ -5099,15 +5227,16 @@ function selRect(){
 }
 let lastPos='';
 function placeBar(){
-  const mode=S.draft?'text':(S.mode==='obj'&&S.osel&&S.osel.length&&!S.odrag)?'obj':'';
-  fT.classList.toggle('show',mode==='text');fO.classList.toggle('show',mode==='obj');
+  const mode=S.draft?'text':S.crop?'crop':(S.mode==='obj'&&S.osel&&S.osel.length&&!S.odrag)?'obj':'';
+  fT.classList.toggle('show',mode==='text');fO.classList.toggle('show',mode==='obj');fC.classList.toggle('show',mode==='crop');
+  if(mode==='crop'){const it=cropItem(),c=it&&it.ed&&it.ed.crop;if(c){fC.querySelectorAll('.shp').forEach(b=>b.classList.toggle('on',b.dataset.shape===(c.shape||'rect')));radR.style.display=c.shape==='round'?'':'none';if(document.activeElement!==radR)radR.value=c.rad==null?0.15:c.rad}}
   if(!mode||!S.doc){fbar.classList.remove('show');more.classList.remove('show');lastPos='';return}
   if(mode==='obj'){
     for(const p of fO.querySelectorAll('[data-t]')){const t=$('#'+p.dataset.t);const box=p.dataset.t==='o-fill'?$('#o-fillbox'):p.dataset.t==='o-stroke'?$('#o-strokebox'):t;p.style.display=visible(box)&&!(t&&t.disabled)?'':'none';
       if(p.classList.contains('pc')&&p.querySelector('input')){const v=t.value;p.querySelector('.sw').style.background=v;if(document.activeElement!==p.querySelector('input'))p.querySelector('input').value=v}}
     dupB.style.display=selItems().length&&selItems().every(it=>String(it.key).startsWith('o:'))?'':'none';
     oTitle.textContent=($('#o-title').textContent||'Object');
-    cropB.title=$('#o-crop').textContent;cropB.classList.toggle('on',/terugzetten/.test($('#o-crop').textContent));
+    cropB.title='Bijsnijden (of dubbelklik op de afbeelding)';
   }
   fbar.classList.add('show');
   const st=$('#stage').getBoundingClientRect(),r=selRect(),w=fbar.offsetWidth,h=fbar.offsetHeight;
@@ -5326,7 +5455,7 @@ function tick(){
   requestAnimationFrame(tick);
 }
 requestAnimationFrame(tick);
-Object.assign(window.__test,{insertBlank,setTab,duplicateSel,drawThumbs,startTour,endTour,placeBar});
+Object.assign(window.__test,{startCrop,endCrop,setCropShape,cropItem,insertBlank,setTab,duplicateSel,drawThumbs,startTour,endTour,placeBar});
 })();
 </script>
 </body>
