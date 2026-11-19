@@ -353,58 +353,6 @@
   #libpanel{top:62px;left:200px}
   .libitem .lno{color:var(--muted)}
 
-  #sheetbtn{display:none;margin-left:auto}
-  #ui-mmore{display:none}
-  #fb-type{display:none}
-  .ui-viewrow{display:flex;align-items:center;gap:12px;margin-top:16px;padding-top:12px;border-top:1px solid var(--line)}
-  .ui-viewrow>span{font-weight:600;font-size:13px}.ui-viewrow .lytabs{margin:0;flex:1}
-  /* =================== MOBIELE WEERGAVE =================== */
-  body.mobile{height:100%;height:100dvh;overflow:hidden}
-  body.mobile #bar{height:52px;gap:4px;padding:0 6px}
-  body.mobile .ui-logo,body.mobile #libbtn,body.mobile .zg,body.mobile #ui-theme,body.mobile #ui-helpbtn,body.mobile #bar .sep,body.mobile #fontwarn{display:none}
-  body.mobile #ui-mmore{display:grid}
-  body.mobile #openbtn{width:40px;padding:0;justify-content:center;font-size:0;gap:0}
-  body.mobile #openbtn .ui-ico{width:20px;height:20px}
-  body.mobile .ui-file{display:flex;flex:1;min-width:0;max-width:none;margin:0 2px}
-  body.mobile #fname{max-width:100%;font-size:13.5px}
-  body.mobile #bar>.ui-file+*{margin-left:0}
-  body.mobile #bar>span[style*="flex:1"]{display:none}
-  body.mobile .dlg2 #dl{padding:0 10px}body.mobile .dlg2 #dl .dlt{display:none}
-  body.mobile .dlg2 #dlmore{padding:0 5px}
-  body.mobile #main{flex-direction:column}
-  body.mobile #thumbs,body.mobile #status{display:none}
-  body.mobile #stage{order:1;flex:1;padding:12px 8px 70px;touch-action:pan-x pan-y}
-  body.mobile #side{order:2;width:auto;border-left:0;border-top:1px solid var(--line);height:46px;max-height:none;flex:none;transition:height .2s;box-shadow:0 -6px 20px #1d243314}
-  body.mobile #side.open{height:min(58vh,520px);height:min(58dvh,520px)}
-  body.mobile #stabs{padding:0 8px;align-items:center;height:46px}
-  body.mobile #stabs button{padding:12px 10px}
-  body.mobile #sheetbtn{display:grid;place-items:center;border:0;background:none;width:40px;height:40px;padding:0;margin-left:auto;color:var(--muted)}
-  body.mobile #rail{order:3;width:auto;flex-direction:row;height:auto;padding:4px 4px calc(4px + env(safe-area-inset-bottom));gap:0;border-right:0;border-top:1px solid var(--line);overflow-x:auto;overflow-y:hidden;justify-content:space-between;flex:none}
-  body.mobile #rail .rsp{display:none}
-  body.mobile #rail .ri{width:auto;min-width:52px;flex:1 0 auto;padding:6px 4px 4px;font-size:10px}
-  body.mobile #rail .ri .ui-ico{width:22px;height:22px}
-  body.mobile #fbar{left:0!important;right:0;border-radius:0;box-shadow:0 4px 14px #1d24331f;border-bottom:1px solid var(--line);overflow-x:auto;overflow-y:hidden;padding:4px 6px;scrollbar-width:none}
-  body.mobile #fbar::-webkit-scrollbar{display:none}
-  body.mobile #fbar .fg{flex:none}
-  body.mobile #fb-type{display:inline-flex;background:var(--acc2);color:var(--accent);font-weight:600}
-  body.mobile #fbar button,body.mobile #fbar .clr,body.mobile #fbar label.pc{min-width:38px;height:38px}
-  body.mobile #f-font{width:130px!important}
-  body.mobile #fb-more{left:8px!important;right:8px;width:auto}
-  body.mobile .ui-menu button{padding:11px 12px;font-size:14px}
-  body.mobile #drop{margin:4vh 4px 0;padding:30px 18px}
-  body.mobile #drop h2{font-size:19px}
-  body.mobile .ohit.sel,body.mobile .oh,body.mobile .orot,body.mobile .grip,body.mobile .rh,body.mobile .ed.draft .txt{touch-action:none}
-  body.mobile .oh{width:18px;height:18px;margin:-9px 0 0 -9px}
-  body.mobile .orot{width:26px;height:26px;margin:-13px 0 0 -13px;line-height:22px}
-  body.mobile .grip{width:28px;height:28px;margin:-30px 0 0 -30px;line-height:28px}
-  body.mobile #pm{width:100vw;height:100dvh;border-radius:0}
-  body.mobile .pmc{width:46%}
-  body.mobile #ui-help .kg{grid-template-columns:1fr}
-  body.mobile #tour{width:min(300px,calc(100vw - 20px))}
-  body.mobile #libpanel{left:8px;right:8px;width:auto;top:58px}
-  body.mobile #toast{bottom:120px}
-  body.mobile #rail-layers,body.mobile #rail-fonts{display:none}
-  body.mobile #rail .ri{min-width:46px;padding:6px 2px 4px}
 </style>
 </head>
 <body class="m-edit">
@@ -873,7 +821,7 @@ function findUnderline(l,rules){
   return null;
 }
 async function fitScale(){
-  const pg=await S.doc.getPage(1),w=pg.getViewport({scale:1}).width,avail=$('#stage').clientWidth-2*(parseFloat(getComputedStyle($('#stage')).paddingLeft)||18)-(document.body.classList.contains('mobile')?0:18);
+  const pg=await S.doc.getPage(1),w=pg.getViewport({scale:1}).width,avail=$('#stage').clientWidth-2*(parseFloat(getComputedStyle($('#stage')).paddingLeft)||18)-18;
   return Math.max(0.4,Math.min(2,Math.floor(avail/w*100)/100));
 }
 async function renderAll(){
@@ -4853,21 +4801,7 @@ document.documentElement.dataset.theme=LS.get('pdfb-theme')==='dark'?'dark':'lig
 const bar=$('#bar'),fileIn=$('#file');
 const ob=$('#openbtn');ob.innerHTML=ico('open')+'Openen';ob.title='PDF openen';
 // bestandskiezer rechtstreeks openen (een label met alleen een pictogram werkt niet op elk toestel, bv. iPhone)
-// Opent er geen venster (bv. in de Claude-app op Android, die geen bestandskiezer toont), leg dan uit wat wel werkt.
-let pickWatch=null;
-function watchPicker(){
-  if(window.desktop)return;
-  clearTimeout(pickWatch&&pickWatch.t);
-  const st={opened:false};
-  const seen=()=>{st.opened=true};
-  window.addEventListener('blur',seen,{once:true});document.addEventListener('visibilitychange',seen,{once:true});
-  st.t=setTimeout(()=>{window.removeEventListener('blur',seen);document.removeEventListener('visibilitychange',seen);
-    if(st.opened||document.hidden||!document.hasFocus())return;
-    say('Er ging geen venster open om een bestand te kiezen. Dat gebeurt in de Claude-app op Android: die laat pagina\'s zoals deze geen bestanden kiezen. <b>Oplossing:</b> open deze pagina in een browser zoals Chrome (kopieer de link via de deelknop van het artefact en plak hem in Chrome), of gebruik de app <b>PDF Bewerken</b>.',14000);
-  },1500);
-  pickWatch=st;
-}
-const pickVia=(el,inp)=>{if(!el||!inp)return;el.addEventListener('click',e=>{if(e.target===inp)return;e.preventDefault();try{inp.value=''}catch(_){}watchPicker();if(inp.showPicker){try{inp.showPicker();return}catch(_){}}inp.click()})};
+const pickVia=(el,inp)=>{if(!el||!inp)return;el.addEventListener('click',e=>{if(e.target===inp)return;e.preventDefault();try{inp.value=''}catch(_){}if(inp.showPicker){try{inp.showPicker();return}catch(_){}}inp.click()})};
 pickVia(ob,fileIn);
 const lb=$('#libbtn');lb.innerHTML=ico('clock')+'Recent';
 $('#undo').innerHTML=ico('undo');$('#redo').innerHTML=ico('redo');$('#undo').classList.add('ui-ib');$('#redo').classList.add('ui-ib');
@@ -4932,7 +4866,7 @@ function toggleMenu(m,anchor,side){
   if(side==='right')placeMenu(m,r.right+8,r.top);else placeMenu(m,r.right-m.offsetWidth||r.left,r.bottom+6);
   if(side!=='right'){const w=m.offsetWidth;m.style.left=Math.max(8,Math.min(innerWidth-w-8,r.right-w))+'px'}
 }
-document.addEventListener('pointerdown',e=>{if(openMenu&&!e.target.closest('.ui-menu')&&!e.target.closest('#dlmore')&&!e.target.closest('#rail-shapes')&&!e.target.closest('#th-add')&&!e.target.closest('#ui-mmore'))hideMenus()},true);
+document.addEventListener('pointerdown',e=>{if(openMenu&&!e.target.closest('.ui-menu')&&!e.target.closest('#dlmore')&&!e.target.closest('#rail-shapes')&&!e.target.closest('#th-add'))hideMenus()},true);
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&openMenu){hideMenus();e.stopPropagation()}},true);
 function menuOf(m,items){
   m.innerHTML='';
@@ -5052,16 +4986,15 @@ const side=$('#side'),stabs=el('div',{id:'stabs'}),sbody=el('div',{id:'sbody'});
 while(side.firstChild)sbody.appendChild(side.firstChild);
 side.append(stabs,sbody);
 const TABS=[['props','Start'],['layers','Lagen'],['fonts','Fonts']];
-for(const [k,t] of TABS){const b=el('button',{},t);b.dataset.tab=k;b.onclick=()=>{if(isMobile()){if(side.dataset.tab===k&&side.classList.contains('open')){sheet(false);return}setTab(k);sheet(true);return}setTab(k)};stabs.appendChild(b)}
-const sheetBtn=el('button',{id:'sheetbtn',title:'Paneel open of dicht'},ico('down'));sheetBtn.onclick=()=>sheet(!side.classList.contains('open'));stabs.appendChild(sheetBtn);
+for(const [k,t] of TABS){const b=el('button',{},t);b.dataset.tab=k;b.onclick=()=>setTab(k);stabs.appendChild(b)}
 function setTab(k){
   side.dataset.tab=k;[...stabs.children].forEach(b=>b.classList.toggle('on',b.dataset.tab===k));
   rLayers.classList.toggle('on',k==='layers');rFonts.classList.toggle('on',k==='fonts');
   const want=k==='layers';if(S.showLayers!==want){S.showLayers=want;$('#t-layers').classList.toggle('on',want)}
   renderLayers();sbody.scrollTop=0;
 }
-rLayers.onclick=()=>{if(isMobile()){setTab('layers');sheet(true);return}setTab(side.dataset.tab==='layers'?'props':'layers')};
-rFonts.onclick=()=>{if(isMobile()){setTab('fonts');sheet(true);return}setTab(side.dataset.tab==='fonts'?'props':'fonts')};
+rLayers.onclick=()=>setTab(side.dataset.tab==='layers'?'props':'layers');
+rFonts.onclick=()=>setTab(side.dataset.tab==='fonts'?'props':'fonts');
 $('#fontwarn').onclick=()=>setTab('fonts');
 $('#t-layers').onclick=()=>setTab(side.dataset.tab==='layers'?'props':'layers');
 setTab('props');
@@ -5110,11 +5043,9 @@ const fbar=el('div',{id:'fbar'}),fT=el('div',{class:'fg',id:'fb-text'}),fO=el('d
 const more=el('div',{id:'fb-more'});fbar.append(fT,fO);document.body.append(fbar,more);
 const vs=()=>el('span',{class:'vs'});
 const moreB=el('button',{id:'fb-morebtn',title:'Meer opmaak'},ico('dots'));
-const typeB=el('button',{id:'fb-type',title:'Typen (toetsenbord)'},ico('text')+'<span style="margin-left:4px">Typen</span>');
-typeB.onclick=()=>{setTab('props');sheet(true);const t=$('#f-text');t.focus();try{t.setSelectionRange(t.value.length,t.value.length)}catch(e){}};
 const clrOf=id=>document.getElementById(id).closest('label');
 $('#r-paint').innerHTML=ico('brush');
-fT.append(typeB,$('#f-font'),$('#f-size'),vs(),$('#f-b'),$('#f-i'),$('#f-u'),clrOf('f-color'),vs(),$('#f-a-left'),$('#f-a-center'),$('#f-a-right'),$('#r-bul'),$('#r-paint'),vs(),moreB);
+fT.append($('#f-font'),$('#f-size'),vs(),$('#f-b'),$('#f-i'),$('#f-u'),clrOf('f-color'),vs(),$('#f-a-left'),$('#f-a-center'),$('#f-a-right'),$('#r-bul'),$('#r-paint'),vs(),moreB);
 $('#f-font').style.width='150px';$('#f-size').style.width='72px';
 const mh=t=>el('div',{class:'mh'},t),mr=(...k)=>{const r=el('div',{class:'mr'});r.append(...k);return r};
 more.append(
@@ -5161,7 +5092,6 @@ function placeBar(){
     oTitle.textContent=($('#o-title').textContent||'Object');
   }
   fbar.classList.add('show');
-  if(isMobile()){const st=$('#stage').getBoundingClientRect(),pos='m'+Math.round(st.top);if(pos!==lastPos){fbar.style.left='0px';fbar.style.top=Math.round(st.top)+'px';lastPos=pos;if(more.classList.contains('show'))placeMore()}return}
   const st=$('#stage').getBoundingClientRect(),r=selRect(),w=fbar.offsetWidth,h=fbar.offsetHeight;
   let x,y;
   if(!r||r.b<st.top||r.t>st.bottom){x=st.left+(st.width-w)/2;y=st.top+10}
@@ -5248,7 +5178,7 @@ const help=el('div',{id:'ui-helpback'},`<div id="ui-help"><h2>Sneltoetsen</h2><p
 <h4>Beeld en bestand</h4>
 <div class="kr"><span>Zoomen</span><span><kbd>Ctrl</kbd>+scroll</span></div><div class="kr"><span>Passend</span><span><kbd>Ctrl</kbd><kbd>0</kbd></span></div>
 <div class="kr"><span>Opslaan</span><span><kbd>Ctrl</kbd><kbd>S</kbd></span></div><div class="kr"><span>Openen</span><span><kbd>Ctrl</kbd><kbd>O</kbd></span></div>
-</div><div class="ui-viewrow"><span>Weergave</span><div class="lytabs" id="ui-view"><button data-v="auto">Automatisch</button><button data-v="desktop">Computer</button><button data-v="mobile">Mobiel</button></div></div><div style="display:flex;justify-content:flex-end;gap:8px;margin-top:18px"><button id="ui-tourbtn">Rondleiding</button><button class="primary" id="ui-helpok">Sluiten</button></div></div>`);
+</div><div style="display:flex;justify-content:flex-end;gap:8px;margin-top:18px"><button id="ui-tourbtn">Rondleiding</button><button class="primary" id="ui-helpok">Sluiten</button></div></div>`);
 document.body.appendChild(help);
 const showHelp=v=>help.classList.toggle('show',v);
 helpB.onclick=()=>showHelp(true);$('#ui-helpok').onclick=()=>showHelp(false);
@@ -5355,31 +5285,6 @@ $('#stage').addEventListener('click',ev=>{if((ev.target.id==='stage'||ev.target.
 const lsOrig=layersSoon;layersSoon=function(){lsOrig.apply(this,arguments);thumbsSoon()};
 const rrOrig=rerenderBase;rerenderBase=async function(){const r=await rrOrig.apply(this,arguments);thumbsSoon(300);return r};
 
-// ---------- mobiele weergave ----------
-const MQ=matchMedia('(max-width: 760px), (pointer: coarse) and (max-width: 1024px)');
-let mobile=false;
-function isMobile(){return mobile}
-function sheet(open){side.classList.toggle('open',!!open);sheetBtn.innerHTML=ico(open?'down':'up');lastPos=''}
-ICO.up='<path d="M6 15l6-6 6 6"/>';
-function applyView(){
-  const p=LS.get('pdfb-view')||'auto',m=p==='mobile'||(p==='auto'&&MQ.matches);
-  document.querySelectorAll('#ui-view button').forEach(b=>b.classList.toggle('on',b.dataset.v===p));
-  if(m===mobile)return;
-  mobile=m;document.body.classList.toggle('mobile',m);sheet(false);lastPos='';hideMenus();
-  if(S.doc)setTimeout(()=>fitScale().then(s=>setZoom(s,null,true)),60);
-}
-MQ.addEventListener&&MQ.addEventListener('change',applyView);
-document.querySelectorAll('#ui-view button').forEach(b=>b.onclick=()=>{LS.set('pdfb-view',b.dataset.v);applyView()});
-// mobiele bovenbalk: knop met de rest (recent, zoom, thema, hulp)
-const mMore=el('button',{id:'ui-mmore',class:'ui-ib',title:'Meer'},ico('dots'));bar.insertBefore(mMore,dlg2);
-const mMenu=el('div',{class:'ui-menu'});document.body.appendChild(mMenu);
-mMore.onclick=e=>{e.stopPropagation();menuOf(mMenu,[
-  {ico:'clock',t:'Recente bestanden',f:()=>lb.click()},'-',
-  {ico:'plus',t:'Inzoomen',f:()=>S.doc&&setZoom(zoomStep(1))},{ico:'minus',t:'Uitzoomen',f:()=>S.doc&&setZoom(zoomStep(-1))},{ico:'pages',t:'Passend op het scherm',f:()=>S.doc&&fitScale().then(s=>setZoom(s,null,true))},'-',
-  {ico:document.documentElement.dataset.theme==='dark'?'sun':'moon',t:document.documentElement.dataset.theme==='dark'?'Licht thema':'Donker thema',f:()=>themeB.click()},
-  {ico:'help',t:'Hulp en weergave',f:()=>showHelp(true)},
-  {ico:'kb',t:'Computerweergave gebruiken',f:()=>{LS.set('pdfb-view','desktop');applyView()}},
-]);toggleMenu(mMenu,mMore)};
 // knijpen om te zoomen (twee vingers) op het werkvlak
 {let pin=null;const stg=$('#stage');
  const dist=t=>Math.hypot(t[0].clientX-t[1].clientX,t[0].clientY-t[1].clientY);
@@ -5387,13 +5292,12 @@ mMore.onclick=e=>{e.stopPropagation();menuOf(mMenu,[
  stg.addEventListener('touchmove',e=>{if(pin&&e.touches.length===2){e.preventDefault();const f=dist(e.touches)/pin.d,c={clientX:(e.touches[0].clientX+e.touches[1].clientX)/2,clientY:(e.touches[0].clientY+e.touches[1].clientY)/2};const ns=pin.s*f;if(Math.abs(ns-S.scale)/S.scale>0.02)setZoom(ns,c)}},{passive:false});
  stg.addEventListener('touchend',e=>{if(e.touches.length<2)pin=null});
 }
-applyView();
 
 // ---------- elke frame: werkbalk volgen en labels bijwerken ----------
 let lastDoc=null,lastLbl='',lastEd='';
 function tick(){
   try{
-    document.body.classList.toggle('nodoc',!S.doc);if(document.body.classList.contains('mobile')!==mobile)document.body.classList.toggle('mobile',mobile);
+    document.body.classList.toggle('nodoc',!S.doc);
     if(S.doc!==lastDoc){lastDoc=S.doc;thSig='';thumbsSoon(400);if(S.doc&&!LS.get('pdfb-tour'))setTimeout(()=>{if(ti<0&&!LS.get('pdfb-tour'))startTour()},1200)}
     const lbl=propsLabel();if(lbl!==lastLbl){lastLbl=lbl;stabs.children[0].textContent=lbl}
     placeBar();
@@ -5404,7 +5308,7 @@ function tick(){
   requestAnimationFrame(tick);
 }
 requestAnimationFrame(tick);
-Object.assign(window.__test,{applyView,sheet,insertBlank,setTab,duplicateSel,drawThumbs,startTour,endTour,placeBar});
+Object.assign(window.__test,{insertBlank,setTab,duplicateSel,drawThumbs,startTour,endTour,placeBar});
 })();
 </script>
 </body>

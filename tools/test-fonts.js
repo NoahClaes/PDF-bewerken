@@ -25,7 +25,7 @@ const MIN_OVERLAP = 0.30, MAX_INK = 1.75, MIN_INK = 0.55, MAX_EXTRA = +(process.
     if (fs.existsSync(p) && fs.statSync(p).isFile()) return r.fulfill({ path: p });
     return r.fulfill({ status: 404, body: '' });
   });
-  await pg.addInitScript(() => { try { localStorage.setItem('pdfb-tour', '1'); localStorage.setItem('pdfb-view', 'desktop') } catch (e) { } window.__noAutoOpen = true; });
+  await pg.addInitScript(() => { try { localStorage.setItem('pdfb-tour', '1') } catch (e) { } window.__noAutoOpen = true; });
   await pg.goto('https://app.test/index.html');
   await pg.addStyleTag({ content: '.ed.draft .txt,.ed.gsel .txt{outline:none!important;background:none!important}.caret,.rh,.grip,.selr,#fbar,#toast{display:none!important}' });
   let bad = 0, total = 0;
