@@ -183,6 +183,18 @@
   html[data-theme=dark]{--ink:#e7e9ee;--muted:#9aa1b0;--line:#2c313c;--accent:#8582ff;--acc2:#2c2b52;--accd:#9a97ff;--bg:#16181d;--panel:#1e2128;--field:#262a33;--fline:#3a404c;--hover:#2a2e38;--soft:#23262e;--shadow:0 8px 28px #0008,0 0 0 1px var(--line);color-scheme:dark}
   body{background:var(--bg);color:var(--ink);font:13.5px/1.4 "Segoe UI Variable Text","Segoe UI",Inter,system-ui,-apple-system,Roboto,sans-serif}
   .ui-ico{pointer-events:none}
+  .stylegal{display:flex;flex-wrap:wrap;gap:6px}
+  .stychip{border:1px solid var(--fline);background:var(--field);border-radius:9px;padding:6px 10px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.2;cursor:pointer}
+  .stychip:hover{border-color:var(--accent)}
+  .stychip.on{border-color:var(--accent);box-shadow:0 0 0 2px var(--acc2)}
+  .stynew{border-style:dashed;color:var(--muted);font-size:12.5px}
+  .styform{display:flex;gap:6px;width:100%}
+  #side .styform input{flex:1;min-width:0}
+  #stylepop{width:290px;max-height:60vh;overflow:auto}
+  #stylepop .sprow{display:flex;align-items:center;gap:4px}
+  #stylepop .sprow .stychip{flex:1;text-align:left;border:0;background:none;padding:8px 10px}
+  #stylepop .sprow .stychip:hover{background:var(--acc2)}
+  #stylepop .sprow .spmore{width:30px;height:30px;padding:0;justify-content:center;border:0;background:none}
   #tabbar{height:40px;flex:none;display:flex;align-items:flex-end;gap:2px;padding:0 10px;background:linear-gradient(90deg,#3f3dd6,#7b4fe2);overflow-x:auto;overflow-y:hidden;scrollbar-width:none}
   #tabbar::-webkit-scrollbar{display:none}
   #tabbar .tab{display:flex;align-items:center;gap:7px;height:33px;padding:0 5px 0 11px;border-radius:9px 9px 0 0;color:#ffffffd9;cursor:pointer;min-width:110px;max-width:230px;flex:0 1 230px;font-size:12.5px;user-select:none}
@@ -5571,6 +5583,105 @@ $('#pages').addEventListener('pointerdown',ev=>{
 
 // klik naast de pagina: alles loslaten
 $('#stage').addEventListener('click',ev=>{if((ev.target.id==='stage'||ev.target.id==='pages')&&S.mode==='obj'){S.osel=[];setMode('edit')}});
+// ---------- stijlen (zoals in Word): opmaak bewaren en opnieuw gebruiken ----------
+const STYKEY='pdfb-styles';
+let styles=[];try{styles=JSON.parse(LS.get(STYKEY)||'[]')||[]}catch(e){styles=[]}
+const saveStyles=()=>LS.set(STYKEY,JSON.stringify(styles));
+const styTargets=()=>S.draft?[S.draft]:S.group?S.group.ids.map(id=>S.edits.find(e=>e.id===id)).filter(Boolean):[];
+function fontNameOf(id){const f=isLib(id)?fontById(id):null;return f?(f.human||f.name):({helv:'Helvetica',times:'Times',cour:'Courier'}[id]||id)}
+// lettertype van een stijl: bestaat het in dit document niet (bv. een lettertype uit een andere PDF), dan een met dezelfde naam zoeken
+function styFont(st){
+  if(!isLib(st.font)||fontById(st.font))return st.font;
+  const want=String(st.fontName||'').toLowerCase().replace(/\(uit pdf\)/,'').trim();
+  const f=S.fonts.find(x=>String(x.human||x.name||'').toLowerCase().replace(/\(uit pdf\)/,'').trim()===want&&!!x.bold===!!st.bold);
+  return f?f.id:null;
+}
+function applyStyle(sty){
+  const T=styTargets();if(!T.length){say('Klik eerst in een tekst (of selecteer meerdere tekstjes), en kies dan een stijl.',4000);return}
+  const st={...sty.st},fid=styFont(st);delete st.fontName;
+  if(fid)st.font=fid;else delete st.font;
+  if(S.draft){
+    const d=S.draft;painterApplyBlock(d,st);d.styleId=sty.id;norm(d);
+    fillForm({keepText:true});paintOverlay(S.pages[d.page-1]);dhRecord('style');refreshTools();queueGlyphs(d,S.pages[d.page-1]);
+  }else{
+    pushUndo();for(const e of T){Object.assign(e,st);e.rn=null;e._segs=null;e.userFont=true;e.styleId=sty.id;norm(e)}
+    repaintAll();syncUI();
+  }
+  if(!fid&&sty.st.font&&isLib(sty.st.font))say('Stijl “'+esc(sty.name)+'” toegepast. Het lettertype '+esc(sty.st.fontName||'')+' zit niet in dit document; voeg het toe bij Fonts.',6000);
+  renderStyles();
+}
+function newStyleFromText(name){
+  const d=S.draft;if(!d){say('Klik eerst in een tekst met de opmaak die je wilt bewaren.',3500);return}
+  const st=painterCapture(d);st.fontName=fontNameOf(st.font);
+  const sty={id:'s'+Date.now().toString(36),name:name||('Stijl '+(styles.length+1)),st};
+  styles.push(sty);saveStyles();d.styleId=sty.id;renderStyles();say('Stijl “'+esc(sty.name)+'” bewaard. Klik in een andere tekst en kies hem om dezelfde opmaak te geven.',5000);
+}
+function updateStyle(sty){
+  const d=S.draft;if(!d){say('Klik eerst in een tekst met de nieuwe opmaak.',3500);return}
+  const st=painterCapture(d);st.fontName=fontNameOf(st.font);sty.st=st;saveStyles();d.styleId=sty.id;
+  // alle teksten met deze stijl in dit document passen mee aan
+  const others=S.edits.filter(e=>e.styleId===sty.id&&e.id!==d.id);
+  if(others.length){pushUndo();const s2={...st};delete s2.fontName;for(const e of others){Object.assign(e,s2);e.rn=null;e._segs=null;e.userFont=true;norm(e)}repaintAll();syncUI()}
+  renderStyles();say('Stijl “'+esc(sty.name)+'” bijgewerkt'+(others.length?' (ook bij '+others.length+' andere tekst'+(others.length>1?'en':'')+')':'')+'.',4000);
+}
+function chipFor(sty){
+  const b=el('button',{class:'stychip',title:sty.name+' — '+(sty.st.fontName||'')+', '+sty.st.fs+' pt'});b.textContent=sty.name;
+  const s=sty.st;b.style.fontFamily=famCss(styFont(s)||s.font);b.style.fontWeight=s.bold?'700':'400';b.style.fontStyle=s.italic?'italic':'normal';
+  b.style.fontSize=Math.max(12,Math.min(19,(+s.fs||11)*0.85))+'px';if(s.color&&s.color.toLowerCase()!=='#ffffff')b.style.color=s.color;if(s.underline)b.style.textDecoration='underline';
+  const cur=styTargets()[0];if(cur&&cur.styleId===sty.id)b.classList.add('on');
+  b.addEventListener('mousedown',e=>e.preventDefault());
+  b.onclick=()=>applyStyle(sty);
+  b.addEventListener('contextmenu',e=>{e.preventDefault();styleMenu(sty,e.clientX,e.clientY)});
+  return b;
+}
+const styMenu=el('div',{class:'ui-menu'});document.body.appendChild(styMenu);
+function styleMenu(sty,x,y){
+  menuOf(styMenu,[
+    {ico:'brush',t:'Bijwerken naar deze tekst',f:()=>updateStyle(sty)},
+    {ico:'text',t:'Naam wijzigen',f:()=>{S.styRename=sty.id;setTab('props');renderStyles();setTimeout(()=>{const i=$('#sty-name');if(i){i.focus();i.select()}},50)}},
+    {ico:'trash',t:'Verwijderen',danger:true,f:()=>{styles=styles.filter(s=>s!==sty);saveStyles();renderStyles();say('Stijl “'+esc(sty.name)+'” verwijderd. Teksten houden hun opmaak.',3500)}},
+  ]);placeMenu(styMenu,x,y);
+}
+// kaart in het tabblad Tekst
+const styCard=el('div',{class:'ui-card',id:'ui-styles'},'<h4>Stijlen</h4><div class="stylegal" id="sty-gal"></div>');
+$('#ui-txtfmt').before(styCard);
+function renderStyles(){
+  const g=$('#sty-gal');if(!g)return;g.innerHTML='';
+  for(const s of styles)g.appendChild(chipFor(s));
+  if(S.styAdding||S.styRename){
+    const ren=styles.find(s=>s.id===S.styRename);
+    const f=el('div',{class:'styform'}),i=el('input',{type:'text',id:'sty-name',placeholder:'Naam, bv. Kop 1'}),ok=el('button',{class:'primary'},'OK'),no=el('button',{},'×');
+    i.value=ren?ren.name:'';
+    const done=()=>{const v=i.value.trim();if(ren){if(v){ren.name=v;saveStyles()}}else newStyleFromText(v);S.styAdding=false;S.styRename=null;renderStyles()};
+    ok.onclick=done;no.onclick=()=>{S.styAdding=false;S.styRename=null;renderStyles()};
+    i.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter'){e.preventDefault();done()}else if(e.key==='Escape'){e.preventDefault();no.click()}});
+    f.append(i,ok,no);g.appendChild(f);
+  }else{
+    const n=el('button',{class:'stychip stynew',title:'De opmaak van deze tekst bewaren als stijl'},'+ Nieuwe stijl');
+    n.addEventListener('mousedown',e=>e.preventDefault());
+    n.onclick=()=>{if(!S.draft){say('Klik eerst in een tekst met de opmaak die je wilt bewaren.',3500);return}S.styAdding=true;renderStyles();setTimeout(()=>{const i=$('#sty-name');if(i)i.focus()},30)};
+    g.appendChild(n);
+  }
+  if(!styles.length&&!S.styAdding)g.appendChild(el('div',{class:'muted',style:'font-size:11.5px;width:100%'},'Rechtsklik op een stijl om hem bij te werken, te hernoemen of te verwijderen.'));
+}
+// knop in de zwevende werkbalk
+const styPop=el('div',{class:'ui-menu',id:'stylepop'});document.body.appendChild(styPop);
+const styB=el('button',{id:'fb-styles',title:'Stijlen'},'<span style="font-weight:700;font-size:13px">Aa</span><span style="margin-left:4px;font-size:12.5px">Stijlen</span>');
+styB.addEventListener('mousedown',e=>e.preventDefault());
+styB.onclick=e=>{
+  e.stopPropagation();if(styPop.classList.contains('show')){hideMenus();return}
+  styPop.innerHTML='';
+  if(!styles.length)styPop.appendChild(el('div',{class:'muted',style:'padding:8px 10px;font-size:12.5px'},'Nog geen stijlen. Bewaar de opmaak van deze tekst als stijl:'));
+  for(const s of styles){const row=el('div',{class:'sprow'}),c=chipFor(s),m=el('button',{class:'spmore',title:'Meer'},ico('dots'));c.onclick=()=>{hideMenus();applyStyle(s)};m.onclick=ev=>{ev.stopPropagation();const r=m.getBoundingClientRect();styleMenu(s,r.left,r.bottom+4)};row.append(c,m);styPop.appendChild(row)}
+  styPop.appendChild(el('hr'));
+  const nb=el('button',{},ico('plus')+'<span>Nieuwe stijl van deze tekst…</span>');nb.onclick=()=>{hideMenus();setTab('props');S.styAdding=true;renderStyles();setTimeout(()=>{const i=$('#sty-name');if(i)i.focus()},50)};styPop.appendChild(nb);
+  hideMenus();const r=styB.getBoundingClientRect();placeMenu(styPop,r.left,r.bottom+8);
+};
+$('#f-font').before(styB,vs());
+// lijst bijwerken als je een andere tekst aanklikt
+{let lastSty='';setInterval(()=>{const t=styTargets()[0],k=(t?t.id+':'+(t.styleId||''):'')+'|'+styles.length;if(k!==lastSty){lastSty=k;renderStyles()}},400)}
+renderStyles();
+
 // ---------- haakjes in de bestaande code ----------
 const lsOrig=layersSoon;layersSoon=function(){lsOrig.apply(this,arguments);thumbsSoon()};
 const rrOrig=rerenderBase;rerenderBase=async function(){const r=await rrOrig.apply(this,arguments);thumbsSoon(300);return r};
@@ -5598,7 +5709,7 @@ function tick(){
   requestAnimationFrame(tick);
 }
 requestAnimationFrame(tick);
-Object.assign(window.__test,{startCrop,endCrop,setCropShape,cropItem,insertBlank,setTab,duplicateSel,drawThumbs,startTour,endTour,placeBar});
+Object.assign(window.__test,{applyStyle,newStyleFromText,updateStyle,styles:()=>styles,startCrop,endCrop,setCropShape,cropItem,insertBlank,setTab,duplicateSel,drawThumbs,startTour,endTour,placeBar});
 })();
 
 if(window.desktop){
