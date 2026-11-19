@@ -4772,7 +4772,21 @@ document.documentElement.dataset.theme=LS.get('pdfb-theme')==='dark'?'dark':'lig
 const bar=$('#bar'),fileIn=$('#file');
 const ob=$('#openbtn');ob.innerHTML=ico('open')+'Openen';ob.title='PDF openen';
 // bestandskiezer rechtstreeks openen (een label met alleen een pictogram werkt niet op elk toestel, bv. iPhone)
-const pickVia=(el,inp)=>{if(!el||!inp)return;el.addEventListener('click',e=>{if(e.target===inp)return;e.preventDefault();try{inp.value=''}catch(_){}if(inp.showPicker){try{inp.showPicker();return}catch(_){}}inp.click()})};
+// Opent er geen venster (bv. in de Claude-app op Android, die geen bestandskiezer toont), leg dan uit wat wel werkt.
+let pickWatch=null;
+function watchPicker(){
+  if(window.desktop)return;
+  clearTimeout(pickWatch&&pickWatch.t);
+  const st={opened:false};
+  const seen=()=>{st.opened=true};
+  window.addEventListener('blur',seen,{once:true});document.addEventListener('visibilitychange',seen,{once:true});
+  st.t=setTimeout(()=>{window.removeEventListener('blur',seen);document.removeEventListener('visibilitychange',seen);
+    if(st.opened||document.hidden||!document.hasFocus())return;
+    say('Er ging geen venster open om een bestand te kiezen. Dat gebeurt in de Claude-app op Android: die laat pagina\'s zoals deze geen bestanden kiezen. <b>Oplossing:</b> open deze pagina in een browser zoals Chrome (kopieer de link via de deelknop van het artefact en plak hem in Chrome), of gebruik de app <b>PDF Bewerken</b>.',14000);
+  },1500);
+  pickWatch=st;
+}
+const pickVia=(el,inp)=>{if(!el||!inp)return;el.addEventListener('click',e=>{if(e.target===inp)return;e.preventDefault();try{inp.value=''}catch(_){}watchPicker();if(inp.showPicker){try{inp.showPicker();return}catch(_){}}inp.click()})};
 pickVia(ob,fileIn);
 const lb=$('#libbtn');lb.innerHTML=ico('clock')+'Recent';
 $('#undo').innerHTML=ico('undo');$('#redo').innerHTML=ico('redo');$('#undo').classList.add('ui-ib');$('#redo').classList.add('ui-ib');
