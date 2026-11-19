@@ -182,6 +182,8 @@
   :root{--ink:#1d2433;--muted:#6b7385;--line:#e6e8ee;--accent:#5b5bf0;--acc2:#ecebff;--accd:#4a49d6;--bg:#f4f5f8;--panel:#fff;--field:#fff;--fline:#dcdfe6;--hover:#f1f2f6;--soft:#f6f7f9;--shadow:0 6px 24px #1d243322,0 0 0 1px var(--line)}
   html[data-theme=dark]{--ink:#e7e9ee;--muted:#9aa1b0;--line:#2c313c;--accent:#8582ff;--acc2:#2c2b52;--accd:#9a97ff;--bg:#16181d;--panel:#1e2128;--field:#262a33;--fline:#3a404c;--hover:#2a2e38;--soft:#23262e;--shadow:0 8px 28px #0008,0 0 0 1px var(--line);color-scheme:dark}
   body{background:var(--bg);color:var(--ink);font:13.5px/1.4 "Segoe UI Variable Text","Segoe UI",Inter,system-ui,-apple-system,Roboto,sans-serif}
+  .ui-ico{pointer-events:none}
+  label.btn,label.ri,label.pc,#openbtn{cursor:pointer;-webkit-tap-highlight-color:transparent}
   .ui-ico{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none;display:block}
   button,.btn{border-radius:9px;border:1px solid var(--fline);background:var(--field);color:var(--ink)}
   button:hover,.btn:hover{background:var(--hover)}
@@ -4769,6 +4771,9 @@ document.documentElement.dataset.theme=LS.get('pdfb-theme')==='dark'?'dark':'lig
 // ---------- bovenbalk ----------
 const bar=$('#bar'),fileIn=$('#file');
 const ob=$('#openbtn');ob.innerHTML=ico('open')+'Openen';ob.title='PDF openen';
+// bestandskiezer rechtstreeks openen (een label met alleen een pictogram werkt niet op elk toestel, bv. iPhone)
+const pickVia=(el,inp)=>{if(!el||!inp)return;el.addEventListener('click',e=>{if(e.target===inp)return;e.preventDefault();try{inp.value=''}catch(_){}if(inp.showPicker){try{inp.showPicker();return}catch(_){}}inp.click()})};
+pickVia(ob,fileIn);
 const lb=$('#libbtn');lb.innerHTML=ico('clock')+'Recent';
 $('#undo').innerHTML=ico('undo');$('#redo').innerHTML=ico('redo');$('#undo').classList.add('ui-ib');$('#redo').classList.add('ui-ib');
 const zm=$('#zoom'),zg=el('div',{class:'zg'});
@@ -4794,7 +4799,7 @@ const main=$('#main'),rail=el('nav',{id:'rail'});
 const toolBtn=(id,ic,label,title)=>{const b=$('#'+id);b.className='ri'+(b.classList.contains('on')?' on':'');b.innerHTML=ico(ic)+label;if(title)b.title=title;return b};
 const newRail=(id,ic,label,title)=>el('button',{id,class:'ri',title},ico(ic)+label);
 const rShapes=newRail('rail-shapes','shapes','Vormen','Rechthoek, ovaal, lijn of pijl invoegen');
-const rImg=el('label',{class:'ri',id:'rail-img',title:'Afbeelding of logo invoegen'},ico('img')+'Afbeelding');rImg.htmlFor='i-imgfile';
+const rImg=el('label',{class:'ri',id:'rail-img',title:'Afbeelding of logo invoegen'},ico('img')+'Afbeelding');rImg.htmlFor='i-imgfile';pickVia(rImg,$('#i-imgfile'));
 const rSym=newRail('rail-sym','sym','Symbool','Symbool invoegen (✓ ★ → € © …)');
 const rLayers=newRail('rail-layers','layers','Lagen','Lagen van deze pagina (L)');
 const rFonts=newRail('rail-fonts','font','Fonts','Lettertypes');
@@ -5198,7 +5203,7 @@ addEventListener('resize',()=>{if(ti>=0)showStep()});
 
 // ---------- startscherm ----------
 {const d=$('#drop');d.insertAdjacentHTML('afterbegin',`<div class="dicon">${ico('file')}</div>`);d.querySelector('h2').textContent='Open een PDF om te bewerken';
- const b=d.querySelector('label.btn');b.removeAttribute('style');b.className='btn primary';b.innerHTML=ico('open')+'PDF kiezen'}
+ const b=d.querySelector('label.btn');b.removeAttribute('style');b.className='btn primary';b.innerHTML=ico('open')+'PDF kiezen';pickVia(b,$('#file'))}
 
 // ---------- haakjes in de bestaande code ----------
 const lsOrig=layersSoon;layersSoon=function(){lsOrig.apply(this,arguments);thumbsSoon()};
