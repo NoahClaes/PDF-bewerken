@@ -2,3 +2,9 @@ node_modules/
 dist/
 dist-linux/
 build/icon.ico
+android/www/
+android/platforms/
+android/plugins/
+android/node_modules/
+android/package-lock.json
+dist-android/
