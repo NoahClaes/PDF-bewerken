@@ -1,4 +1,5 @@
-Nieuw in **PDF Bewerken 2.1.0**
+Nieuw in **PDF Bewerken 2.1.1**
 
-- **Lege pagina toevoegen**: klik bij de paginaminiaturen op *+ Pagina toevoegen* en kies een lege pagina (na de huidige pagina of aan het einde). Ook via rechtsklik op een miniatuur (*Lege pagina erna invoegen*) en in *Pagina's* met de knop *+ Lege pagina*. De lege pagina krijgt dezelfde maat als de pagina ervoor.
-- **Mobiele weergave**: op een telefoon of smal venster past de indeling zich vanzelf aan (gereedschap onderaan, uitklapbaar paneel, werkbalk bovenaan, knijpen om te zoomen). Kies zelf via **?** → *Weergave*: Automatisch, Computer of Mobiel.
+- **Opgelost: blokjes in plaats van spaties.** Bij sommige PDF's uit Word (bv. met het lettertype Corbel) verschenen er blokjes en verdwenen er letters als je tekst aanklikte of selecteerde, vooral op telefoons. Elk teken wordt nu eerst gecontroleerd: zit het niet goed in het lettertype van de PDF, dan komt het uit een passend vervangend lettertype.
+- **Extra controle op het toestel zelf**: kan een telefoon of computer een lettertype uit de PDF niet tekenen, dan schakelt de editor vanzelf over op het vervangende lettertype.
+- **Automatische lettertypetest** vóór elke nieuwe versie: elke regel van een reeks test-PDF's wordt bewerkt en gecontroleerd. Mislukt die test, dan wordt de versie niet uitgebracht.

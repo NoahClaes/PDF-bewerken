@@ -13,7 +13,30 @@ permissions:
   contents: write
 
 jobs:
+  # Lettertypetest: elke regel van de test-PDF's bewerken en controleren dat alle tekens juist getekend worden.
+  # Mislukt deze test, dan wordt er niets uitgebracht.
+  fonttest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Browser installeren
+        run: |
+          npm install --prefix "$RUNNER_TEMP/pw" --no-audit --no-fund playwright@1.63.0
+          "$RUNNER_TEMP/pw/node_modules/.bin/playwright" install --with-deps chromium
+      - name: Lettertypes testen
+        run: NODE_PATH="$RUNNER_TEMP/pw/node_modules" node tools/test-fonts.js tests/pdfs dist-test
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: lettertypetest
+          path: dist-test/
+
   build:
+    needs: fonttest
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4

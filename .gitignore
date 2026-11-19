@@ -8,3 +8,4 @@ android/plugins/
 android/node_modules/
 android/package-lock.json
 dist-android/
+dist-test/

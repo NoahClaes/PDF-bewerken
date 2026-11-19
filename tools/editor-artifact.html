@@ -1153,8 +1153,38 @@ async function prepareEditFonts(){
 }
 async function ensureFace(f){
   if(!f||f.faceReady||f.broken)return;
-  try{const ff=new FontFace(f.fam,f.buf.slice(0));await ff.load();document.fonts.add(ff);f.faceReady=true}
+  try{const ff=new FontFace(f.fam,f.buf.slice(0));await ff.load();document.fonts.add(ff);f.faceReady=true;if(f.src==='pdf')checkFaceDraws(f)}
   catch(e){f.broken=true;console.warn('lettertype kan niet worden geladen',f.name,e)}
+}
+// Tekent dit toestel de letters van een PDF-lettertype echt? (sommige toestellen, bv. Android, tonen anders blokjes)
+// - lettertype helemaal onbruikbaar: niet gebruiken (dan neemt de vervanger het over)
+// - enkele tekens tonen het 'ontbrekend teken'-blokje: die tekens uit dit lettertype niet gebruiken
+const GLYPHCV=document.createElement('canvas');GLYPHCV.width=GLYPHCV.height=48;
+function glyphSig(font,txt){
+  const x=GLYPHCV.getContext('2d',{willReadFrequently:true});x.clearRect(0,0,48,48);x.font=font;x.fillStyle='#000';x.textBaseline='middle';x.fillText(txt,4,24);
+  const d=x.getImageData(0,0,48,48).data;let h=0,ink=0;for(let i=3;i<d.length;i+=4){if(d[i]>40){ink++;h=(h*31+i)|0}}
+  return {k:ink+':'+h+':'+Math.round(x.measureText(txt).width*10),ink};
+}
+function checkFaceDraws(f){
+  try{
+    if(!f.u2f||!f.u2f.size)return;
+    const own=`36px "${f.fam}"`,none='36px "PdfbGeenLettertype"';
+    // 1. wordt het lettertype zelf gebruikt? (gewone letters die niet verschoven zijn)
+    const plain=[...f.u2f].filter(([u,m])=>u===m&&/[A-Za-z0-9]/.test(u)).map(([u])=>u).slice(0,8).join('');
+    if(plain.length>=2&&glyphSig(own,plain).k===glyphSig(`36px "${f.fam}", "PdfbGeenLettertype"`,plain).k&&glyphSig(own,plain).k===glyphSig(none,plain).k){
+      f.u2f=new Map();f.broken=true;S.fonts=S.fonts.filter(x=>x!==f);fontsChanged();console.warn('PDF-lettertype wordt niet getekend op dit toestel:',f.name);return;
+    }
+    // 2. tekens die als 'ontbrekend'-blokje getekend worden
+    const tofu=new Set([glyphSig(own,'\u{10FFFD}').k,glyphSig(none,'\u{10FFFD}').k,glyphSig(none,'\uE0FF').k]);
+    let gone=0;
+    for(const [u,m] of [...f.u2f]){
+      const s=glyphSig(own,m);
+      if(s.ink&&tofu.has(s.k)){f.u2f.delete(u);gone++}
+      else if(/\s/.test(u)&&s.ink){f.u2f.delete(u);gone++}   // een spatie hoort leeg te zijn
+    }
+    f.u2fChecked=true;
+    if(gone){fontsChanged();console.warn(gone+' teken(s) uit',f.name,'niet bruikbaar op dit toestel')}
+  }catch(e){}
 }
 // ---- lettertypes uit de PDF zelf ----
 function registerPdfFont(fo){
@@ -1171,6 +1201,10 @@ function registerPdfFont(fo){
     const c=+k,fc=tf[k];if(fc==null||isNaN(c))continue;
     const u=uni(c);if(typeof u!=='string'||!u||[...u].length!==1||u2f.has(u))continue;
     try{if(!fk.hasGlyphForCodePoint(fc))continue}catch(e){continue}
+    // het teken moet een echte vorm hebben: een spatie is leeg, een letter niet
+    // (Word-PDF's koppelen soms de spatie aan een getekend blokje; dan nemen we de spatie uit een ander lettertype)
+    let gcmd=-1;try{const g=fk.glyphForCodePoint(fc);if(!g||!g.id)continue;gcmd=g.path.commands.length}catch(e){gcmd=-1}
+    if(/\s/.test(u)){if(gcmd!==0)continue}else if(gcmd===0&&!/[\u200b-\u200f\u2060\ufeff]/.test(u))continue;
     u2f.set(isZapf(fo.name)?zapfStr(u):u,String.fromCodePoint(fc));
   }
   const f={id,key:id.slice(2),src:'pdf',raw:fo.name,dlen:fo.data.length,name:`${p.human||fo.name} ${wname(p.weight,p.italic)}`.trim()+' (uit PDF)',fam:famName('pf'),buf:fo.data,weight:p.weight,italic:p.italic,norm:p.norm,human:p.human,u2f,fk,serif:!!fo.isSerifFont&&!/sans/i.test(fo.name)};
@@ -1194,7 +1228,7 @@ function covers(id,c){
   const k=id+'\u0001'+c,v=COV.get(k);if(v!==undefined)return v;
   const f=fontById(id);if(!f)return false;
   let r=false;
-  if(f.u2f&&f.u2f.size)r=f.u2f.has(c);
+  if(f.u2f&&(f.u2f.size||f.u2fChecked))r=f.u2f.has(c);
   else{const fk=fkOf(f);if(fk){try{r=fk.hasGlyphForCodePoint(c.codePointAt(0))}catch(e){}}}
   COV.set(k,r);return r;
 }
