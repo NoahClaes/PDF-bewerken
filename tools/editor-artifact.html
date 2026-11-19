@@ -499,6 +499,7 @@
       <label style="margin:12px 0 4px">Schikken<i class="info" tabindex="0" data-tip="Bepaal wat bovenop wat ligt, zoals in Word.&#10;Voor tekst: boven de tekst en afbeeldingen van de pagina.&#10;Achter tekst: erachter, zoals een achtergrond of kader.&#10;Naar voren/achteren: één laag verschuiven ten opzichte van wat ermee overlapt.">i</i></label>
       <div class="arr"><button id="oa-front" title="Helemaal naar voren: boven alles"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><rect x="1.5" y="8" width="7" height="6.5" fill="none"/><rect x="5" y="2" width="9.5" height="8" fill="currentColor" fill-opacity=".85"/></svg></button><button id="oa-forward" title="Naar voren: één laag omhoog"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><rect x="1.5" y="6.5" width="8" height="8"/><rect x="6.5" y="1.5" width="8" height="8" fill="currentColor" fill-opacity=".85"/><path d="M3 3.5h3M3 3.5v3" stroke-linecap="round"/></svg></button><button id="oa-backward" title="Naar achteren: één laag omlaag"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><rect x="6.5" y="1.5" width="8" height="8"/><rect x="1.5" y="6.5" width="8" height="8" fill="currentColor" fill-opacity=".25"/><path d="M13 12.5h-3M13 12.5v-3" stroke-linecap="round"/></svg></button><button id="oa-back" title="Helemaal naar achteren: achter alles, ook achter de tekst van de pagina"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><rect x="5" y="2" width="9.5" height="8"/><rect x="1.5" y="8" width="7" height="6.5" fill="currentColor" fill-opacity=".25"/></svg></button><button id="oa-infront">Voor tekst</button><button id="oa-behind">Achter tekst</button></div>
       <div class="btns">
+        <button id="o-crop" title="De afbeelding is bijgesneden. Toon de hele afbeelding, of zet de uitsnede terug.">Uitsnede weghalen</button>
         <label class="btn" for="o-imgfile" id="o-replace">Andere afbeelding…</label><input id="o-imgfile" type="file" accept="image/*" hidden>
         <button id="o-del">Verwijderen</button>
         <button id="o-reset">Terugzetten</button>
@@ -2820,7 +2821,7 @@ async function buildPdfBytes(){
 // laagvolgorde op een pagina: [achter de tekst] , de oorspronkelijke inhoud , [voor de tekst]
 const hashOf=o=>JSON.stringify(o,(k,v)=>k&&k[0]==='_'?undefined:v);
 const exMoved=o=>{const a=o.b0,b=o.b;return !!(a&&b&&(Math.abs(a.x-b.x)>1e-3||Math.abs(a.y-b.y)>1e-3||Math.abs(a.w-b.w)>1e-3||Math.abs(a.h-b.h)>1e-3))};
-const isLiftedEx=o=>!!(o.lift||o.img||o.rot||exMoved(o));
+const isLiftedEx=o=>!!(o.lift||o.img||o.rot||o.noclip||exMoved(o));
 const zDef=(k,r)=>r.z!=null?r.z:(k==='x'?5e5:k==='n'?1e6:2e6)+(r.id||0);
 function layerList(pn,mode){   // mode: 'export' | 'preview' (zonder open tekstblok) | 'arrange' (met open tekstblok)
   const L=[],dr=S.draft&&S.draft.page===pn?S.draft:null;
@@ -3333,7 +3334,7 @@ function removeTextInRects(pdf,page,rects,killRects,objOps,guard,opts7){
   // samen met zijn knipvenster (bv. een bijgesneden foto), kleuren en transparantie
   const lifted=(op,body)=>{
     const T=op.M||[1,0,0,1,0,0];let s='\nq\n';
-    for(const c of clips){const M=mmul(c.ctm,T);s+=fmtM(M)+' cm\n'+c.txt+'\n'+c.rule+' n\n'+fmtM(minv(M))+' cm\n'}
+    if(!op.noclip)for(const c of clips){const M=mmul(c.ctm,T);s+=fmtM(M)+' cm\n'+c.txt+'\n'+c.rule+' n\n'+fmtM(minv(M))+' cm\n'}
     s+=gsT.gs+gsT.fc+gsT.sc+Object.values(gsT.m).join('')+'\n';
     const M2=mmul(ctm,T);s+=fmtM(M2)+' cm\n';
     if(op.fill)s+=rgbOps(op.fill)+' rg\n';if(op.stroke)s+=rgbOps(op.stroke)+' RG\n';if(op.lw!=null)s+=(op.lw/scl(M2)).toFixed(4)+' w\n';
@@ -3350,7 +3351,12 @@ function removeTextInRects(pdf,page,rects,killRects,objOps,guard,opts7){
   const NOFILL={f:'n',F:'n','f*':'n',B:'S','B*':'S',b:'s','b*':'s',S:'S',s:'s'};
   const colOp=(a,cs)=>a.length===4?{t:'cmyk',v:a}:a.length===3?{t:'rgb',v:a}:(a.length===1&&cs==='DeviceGray')?{t:'gray',v:a}:null;
   const csDef=n=>n==='DeviceGray'?{t:'gray',v:[0]}:n==='DeviceRGB'?{t:'rgb',v:[0,0,0]}:n==='DeviceCMYK'?{t:'cmyk',v:[0,0,0,1]}:null;
-  const imgObj=(kind,pts,name)=>{const o={ord:ord++,kind,bb:clipBB(bboxOf(pts.map(([x,y])=>ptT(x,y)))),name};objects.push(o);return objOps&&objOps.get(o.ord)};
+  const cutBy=bb=>{const A=Math.max(1e-6,(bb[2]-bb[0])*(bb[3]-bb[1]));for(const c of clips){
+      const ix=Math.max(0,Math.min(bb[2],c.bb[2])-Math.max(bb[0],c.bb[0])),iy=Math.max(0,Math.min(bb[3],c.bb[3])-Math.max(bb[1],c.bb[1]));
+      if(ix*iy<0.97*A)return true;                                   // knipvenster kleiner dan het object
+      if(!/^[-\d.\s]+re$/.test(String(c.txt).trim()))return true}         // schuin of rond knipvenster
+    return false};
+  const imgObj=(kind,pts,name)=>{const raw=bboxOf(pts.map(([x,y])=>ptT(x,y)));const o={ord:ord++,kind,bb:clipBB(raw),name,clipped:cutBy(raw)};objects.push(o);return objOps&&objOps.get(o.ord)};
   const hit=()=>{const m=mmul(tm,ctm);const x=m[4],y=m[5];for(let i=0;i<rects.length;i++){const r=rects[i];if(x>=r.x0-2&&x<=r.x1+2&&y>=r.y0-0.5&&y<=r.y1+0.5)return i}return -1};
   // veilig? het stuk tekst loopt tot het volgende stuk op dezelfde regel; alle tekst daartussen moet in een vak liggen
   counts.unsafe=rects.map(()=>false);
@@ -3575,7 +3581,7 @@ function scanPageObjects(P){
       const x=o.bb[0]-P.x0,y=P.y1-o.bb[3],w=o.bb[2]-o.bb[0],h=o.bb[3]-o.bb[1];
       if(!(w>=0.3||h>=0.3)||!isFinite(x+y+w+h))continue;
       if(x>P.wPt||y>P.hPt||x+w<0||y+h<0)continue;
-      P.objs.push({ord:o.ord,t:o.kind,x,y,w,h,fill:colHex(o.fill),stroke:colHex(o.stroke),lw:o.lw,hasF:!!o.hasF,hasS:!!o.hasS,bg:w*h>0.8*area});
+      P.objs.push({ord:o.ord,t:o.kind,x,y,w,h,clipped:!!o.clipped,fill:colHex(o.fill),stroke:colHex(o.stroke),lw:o.lw,hasF:!!o.hasF,hasS:!!o.hasS,bg:w*h>0.8*area});
     }
   }catch(e){console.warn('objecten lezen mislukt',e)}
 }
@@ -3861,6 +3867,9 @@ function fillObjForm(){
   $('#o-nofill').checked=shapes.length>0&&shapes.every(i=>i.ed&&i.ed.nofill);
   const img=one&&['image','img','form'].includes(one.t);
   $('#o-replace').style.display=img?'':'none';
+  const cut=one&&!one.isNew&&one.src&&one.src.clipped;
+  $('#o-crop').style.display=cut?'':'none';
+  if(cut)$('#o-crop').textContent=one.ed&&one.ed.noclip?'Uitsnede terugzetten':'Uitsnede weghalen';
   $('#o-reset').style.display=items.some(i=>!i.isNew&&i.ed)?'':'none';
   let desc='';
   if(one&&!one.isNew){desc=one.bg?'Achtergrond van de pagina (een vlak of afbeelding over de hele pagina).':one.t==='image'?'Afbeelding uit de PDF.':one.t==='form'?'Groep uit de PDF (vaak een logo of een ingevoegde afbeelding).':'Getekende vorm uit de PDF.';if(one.ed&&one.ed.img)desc+=' Vervangen door een nieuwe afbeelding.'}
@@ -3901,6 +3910,12 @@ $('#o-stroke').addEventListener('input',()=>setShapeProp('stroke',$('#o-stroke')
 $('#o-lw').addEventListener('change',()=>{const v=parseFloat($('#o-lw').value);if(v>=0)setShapeProp('lw',v)});
 $('#o-nofill').addEventListener('change',()=>setShapeProp('nofill',$('#o-nofill').checked));
 $('#o-del').onclick=deleteSelObjs;
+$('#o-crop').onclick=()=>{
+  const it=selItems()[0];if(!it||it.isNew||!it.src||!it.src.clipped)return;
+  pushUndo();const ed=ensureObjEd(it);ed.noclip=!ed.noclip;
+  objChanged(it.P);repaintAll();fillObjForm();syncUI();
+  say(ed.noclip?'Uitsnede weggehaald: je ziet nu de hele afbeelding.':'Uitsnede teruggezet.',3000);
+};
 $('#o-done').onclick=()=>{S.osel=[];afterObjSel(null)};
 $('#o-reset').onclick=()=>{
   const items=selItems().filter(i=>!i.isNew&&i.ed);if(!items.length)return;
@@ -3992,7 +4007,7 @@ async function objOpsFor(n,pdf,page){
       const a=o.b0,b=o.b;
       if(Math.abs(a.x-b.x)>1e-3||Math.abs(a.y-b.y)>1e-3||Math.abs(a.w-b.w)>1e-3||Math.abs(a.h-b.h)>1e-3||o.rot)op.M=boxT(P,a,b);
       if(o.rot)op.M=mmul(op.M,rotM(P,b,o.rot));
-      if(o.fill)op.fill=o.fill;if(o.stroke)op.stroke=o.stroke;if(o.lw!=null)op.lw=o.lw;if(o.nofill)op.nofill=true;if(o.lift)op.lift=true;
+      if(o.fill)op.fill=o.fill;if(o.stroke)op.stroke=o.stroke;if(o.lw!=null)op.lw=o.lw;if(o.nofill)op.nofill=true;if(o.lift)op.lift=true;if(o.noclip){op.noclip=true;op.lift=true}
       if(o.img){
         // de nieuwe afbeelding vult het oude vak; het verschil in vorm zit in de verplaatsing
         const im=await embedBlob(pdf,o.img);op.img=page.node.newXObject('ImR',im.ref).toString().slice(1);
@@ -4786,7 +4801,8 @@ const ICO={
   file:'<path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8z"/><path d="M14 3v5h5"/>',
   split:'<rect x="3" y="4" width="7" height="16" rx="1.5"/><rect x="14" y="4" width="7" height="16" rx="1.5"/>',
   kb:'<rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/>',
-  para:'<path d="M13 4v16M17 4v16M19 4H9.5a4.5 4.5 0 000 9H13"/>'
+  para:'<path d="M13 4v16M17 4v16M19 4H9.5a4.5 4.5 0 000 9H13"/>',
+  crop:'<path d="M6 2v14a2 2 0 002 2h14"/><path d="M18 22V8a2 2 0 00-2-2H2"/>'
 };
 const ico=(n,cls)=>`<svg class="ui-ico${cls?' '+cls:''}" viewBox="0 0 24 24">${ICO[n]||''}</svg>`;
 const el=(tag,props,html)=>{const e=document.createElement(tag);if(props)for(const k in props){if(k==='class')e.className=props[k];else if(k in e&&k!=='style')e[k]=props[k];else e.setAttribute(k,props[k])}if(html!=null)e.innerHTML=html;return e};
@@ -5062,8 +5078,9 @@ const proxyClr=(target,title)=>{const l=el('label',{class:'pc',title}),sw=el('sp
   i.addEventListener('change',()=>{const r=$('#'+target);r.dispatchEvent(new Event('change',{bubbles:true}))});return l};
 const repl=el('label',{class:'pc',title:'Andere afbeelding…'},ico('swap'));repl.htmlFor='o-imgfile';repl.dataset.t='o-replace';
 const oTitle=el('span',{class:'tl',id:'fb-otitle'});
+const cropB=proxyBtn('o-crop','crop','Uitsnede weghalen / terugzetten');
 const dupB=el('button',{title:'Dupliceren (Ctrl+D)'},ico('dup'));dupB.onclick=()=>duplicateSel();dupB.dataset.dup='1';
-fO.append(oTitle,proxyClr('o-fill','Vulkleur'),proxyClr('o-stroke','Lijnkleur'),vs(),proxyBtn('o-rl','rl','90° naar links draaien'),proxyBtn('o-rr','rr','90° naar rechts draaien'),repl,dupB,vs(),
+fO.append(oTitle,proxyClr('o-fill','Vulkleur'),proxyClr('o-stroke','Lijnkleur'),vs(),proxyBtn('o-rl','rl','90° naar links draaien'),proxyBtn('o-rr','rr','90° naar rechts draaien'),repl,cropB,dupB,vs(),
   proxyBtn('oa-forward','fwd','Naar voren'),proxyBtn('oa-backward','bwd','Naar achteren'),vs(),proxyBtn('o-del','trash','Verwijderen (Delete)'));
 moreB.onclick=e=>{
   e.stopPropagation();if(more.classList.contains('show')){more.classList.remove('show');return}
@@ -5090,6 +5107,7 @@ function placeBar(){
       if(p.classList.contains('pc')&&p.querySelector('input')){const v=t.value;p.querySelector('.sw').style.background=v;if(document.activeElement!==p.querySelector('input'))p.querySelector('input').value=v}}
     dupB.style.display=selItems().length&&selItems().every(it=>String(it.key).startsWith('o:'))?'':'none';
     oTitle.textContent=($('#o-title').textContent||'Object');
+    cropB.title=$('#o-crop').textContent;cropB.classList.toggle('on',/terugzetten/.test($('#o-crop').textContent));
   }
   fbar.classList.add('show');
   const st=$('#stage').getBoundingClientRect(),r=selRect(),w=fbar.offsetWidth,h=fbar.offsetHeight;

@@ -1,3 +1,3 @@
-Nieuw in **PDF Bewerken 2.2.1**
+Nieuw in **PDF Bewerken 2.3.0**
 
-- De editor gebruikt nu altijd de computerweergave, ook in een smal venster. De aparte telefoonweergave en de Android-app zijn verwijderd; PDF Bewerken is voortaan een Windows-app.
+- **Uitsnede weghalen**: is een afbeelding in de PDF bijgesneden (bijvoorbeeld schuin, zodat je maar een deel van de foto ziet), dan kun je bij die afbeelding op **Uitsnede weghalen** klikken om de hele foto te tonen. Met **Uitsnede terugzetten** komt de oorspronkelijke uitsnede terug. De knop staat bij het object en in de zwevende werkbalk.
