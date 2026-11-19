@@ -53,6 +53,7 @@ function buildMenu() {
   const send = ch => () => win && win.webContents.send(ch);
   const tpl = [
     { label: 'Bestand', submenu: [
+      { label: 'Nieuw document (lege pagina)', accelerator: 'CmdOrCtrl+N', registerAccelerator: false, click: send('menu-new') },
       { label: 'PDF openen…', accelerator: 'CmdOrCtrl+O', registerAccelerator: false, click: chooseAndOpen },
       { label: 'Opslaan als PDF…', accelerator: 'CmdOrCtrl+S', registerAccelerator: false, click: send('menu-save') },
       { label: 'Mijn bestanden', click: send('menu-library') },

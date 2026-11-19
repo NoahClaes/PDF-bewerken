@@ -183,6 +183,19 @@
   html[data-theme=dark]{--ink:#e7e9ee;--muted:#9aa1b0;--line:#2c313c;--accent:#8582ff;--acc2:#2c2b52;--accd:#9a97ff;--bg:#16181d;--panel:#1e2128;--field:#262a33;--fline:#3a404c;--hover:#2a2e38;--soft:#23262e;--shadow:0 8px 28px #0008,0 0 0 1px var(--line);color-scheme:dark}
   body{background:var(--bg);color:var(--ink);font:13.5px/1.4 "Segoe UI Variable Text","Segoe UI",Inter,system-ui,-apple-system,Roboto,sans-serif}
   .ui-ico{pointer-events:none}
+  #tabbar{height:40px;flex:none;display:flex;align-items:flex-end;gap:2px;padding:0 10px;background:linear-gradient(90deg,#3f3dd6,#7b4fe2);overflow-x:auto;overflow-y:hidden;scrollbar-width:none}
+  #tabbar::-webkit-scrollbar{display:none}
+  #tabbar .tab{display:flex;align-items:center;gap:7px;height:33px;padding:0 5px 0 11px;border-radius:9px 9px 0 0;color:#ffffffd9;cursor:pointer;min-width:110px;max-width:230px;flex:0 1 230px;font-size:12.5px;user-select:none}
+  #tabbar .tab .ui-ico{width:15px;height:15px}
+  #tabbar .tab:hover{background:#ffffff21;color:#fff}
+  #tabbar .tab.on{background:var(--panel);color:var(--ink);font-weight:600}
+  #tabbar .tn{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #tabbar .tx{border:0;background:none;color:inherit;width:22px;height:22px;padding:0;border-radius:6px;justify-content:center;opacity:.65;font-size:16px;line-height:1}
+  #tabbar .tx:hover{background:#0000001f;opacity:1}
+  #tabbar .tabplus{border:0;background:none;color:#fff;width:30px;height:30px;padding:0;justify-content:center;margin:0 0 3px 4px;flex:none;border-radius:8px}
+  #tabbar .tabplus:hover{background:#ffffff2b}
+  #drop .dbtns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+  #drop #newblank{height:42px;padding:0 20px;font-size:14.5px;border-radius:11px}
   .cropbox{position:absolute;z-index:8}
   .cropsvg{position:absolute;left:0;top:0;overflow:visible;pointer-events:none}
   .cropwin{position:absolute;cursor:move}
@@ -634,19 +647,24 @@ const DDB={
 function docIdOf(buf,name){let h=0;const n=buf.length,step=Math.max(1,Math.floor(n/4000));for(let i=0;i<n;i+=step)h=(h*31+buf[i])>>>0;return name+'|'+n+'|'+h}
 function saveState(t,bad){const el=$('#savestat');if(!el)return;el.textContent=t;el.className=bad?'bad':''}
 let saveTimer=null;
+// nu meteen bewaren (de toestand op dit moment, ook als je daarna naar een ander bestand gaat)
+async function saveNow(force){
+  if(!S.doc||!S.docId||S.noSaveDocs)return;
+  clearTimeout(saveTimer);
+  const json=JSON.stringify([S.edits,S.objs]);
+  if(!force&&json===S.lastSaved)return;
+  const id=S.docId,name=S.name,bytes=S.bytes,edits=S.edits,objs=S.objs,uid=S.uid;
+  try{
+    const used={};for(const o of objs)if(o.img&&S.blobs[o.img])used[o.img]=S.blobs[o.img];
+    for(const u of S.undo.concat(S.redo))for(const m of String(typeof u==='object'?u.state:u).matchAll(/"img":"(b[0-9a-z]+)"/g))if(S.blobs[m[1]])used[m[1]]=S.blobs[m[1]];
+    await DDB.put({id,name,bytes,edits,objs,blobs:used,uid,updated:Date.now(),sigfix:true});
+    if(S.docId===id){S.lastSaved=json;saveState('✓ Bewaard')}renderLib();
+  }catch(e){S.noSaveDocs=true;saveState('Niet bewaard (browser blokkeert opslag)',true)}
+}
 function scheduleSave(force){
   if(!S.doc||!S.docId||S.noSaveDocs)return;
   clearTimeout(saveTimer);
-  saveTimer=setTimeout(async()=>{
-    const json=JSON.stringify([S.edits,S.objs]);
-    if(!force&&json===S.lastSaved)return;
-    try{
-      const used={};for(const o of S.objs)if(o.img&&S.blobs[o.img])used[o.img]=S.blobs[o.img];
-      for(const u of S.undo.concat(S.redo))for(const m of String(typeof u==='object'?u.state:u).matchAll(/"img":"(b[0-9a-z]+)"/g))if(S.blobs[m[1]])used[m[1]]=S.blobs[m[1]];
-      await DDB.put({id:S.docId,name:S.name,bytes:S.bytes,edits:S.edits,objs:S.objs,blobs:used,uid:S.uid,updated:Date.now(),sigfix:true});
-      S.lastSaved=json;saveState('✓ Bewaard');renderLib();
-    }catch(e){S.noSaveDocs=true;saveState('Niet bewaard (browser blokkeert opslag)',true)}
-  },force?0:600);
+  saveTimer=setTimeout(()=>saveNow(force),force?0:600);
 }
 async function renderLib(){
   const boxes=[$('#lib-list'),$('#drop-list')].filter(Boolean);
@@ -665,6 +683,7 @@ async function renderLib(){
           e2.preventDefault();e2.stopPropagation();
           try{await DDB.del(id)}catch(e){say('Verwijderen lukte niet.',3000)}
           if(id===S.docId){S.docId=null;saveState('Niet bewaard (bestand verwijderd)',true)}
+          if(window.tabsForget)tabsForget(id);
           renderLib();
         };
       };
@@ -743,6 +762,7 @@ async function openBytes(buf,name,opt){
       },1800);
     }
     scheduleSave(true);
+    if(window.tabsOpened)tabsOpened(id,name);
   }catch(e){
     const m=(e&&e.name==='PasswordException')?'Dit PDF is met een wachtwoord beveiligd. Haal eerst de beveiliging weg.':'Kon dit bestand niet openen: '+(e.message||e);
     say(m,7000);
@@ -3575,6 +3595,8 @@ document.addEventListener('click',e=>{const p=$('#libpanel');if(!p.hidden&&!e.ta
 (async()=>{
   try{
     const docs=(await DDB.all()).sort((a,b)=>b.updated-a.updated);
+    // het tabblad dat je laatst open had, eerst
+    try{const last=localStorage.getItem('pdfb-tab-active'),i=docs.findIndex(d=>d.id===last);if(i>0)docs.unshift(docs.splice(i,1)[0])}catch(e){}
     renderLib();
     if(window.desktop)await new Promise(r=>setTimeout(r,500));
     if(docs.length&&!S.doc&&!S.extOpen&&!window.__noAutoOpen){await openSaved(docs[0].id)}
@@ -5001,6 +5023,81 @@ bar.innerHTML='';
 bar.append(logo,fileBox,ob,lb,sep(),uB,rB,el('span',{style:'flex:1'}),fw,zg,sep(),themeB,helpB,dlg2,fileIn);
 setTheme(document.documentElement.dataset.theme);
 
+// ---------- tabbladen (zoals in Canva) en een nieuw, leeg document ----------
+const TABKEY='pdfb-tabs';
+let tabs=[];try{tabs=(JSON.parse(LS.get(TABKEY)||'[]')||[]).filter(t=>t&&t.id)}catch(e){tabs=[]}
+const saveTabs=()=>LS.set(TABKEY,JSON.stringify(tabs));
+const tabbar=el('div',{id:'tabbar'});bar.parentNode.insertBefore(tabbar,bar);
+const newMenu=el('div',{class:'ui-menu',id:'newmenu'});document.body.appendChild(newMenu);
+const SIZES={a4p:[595.28,841.89],a4l:[841.89,595.28],letter:[612,792]};
+async function newBlank(k){
+  const [w,h]=SIZES[k]||SIZES.a4p;
+  try{
+    const d=await PDFLib.PDFDocument.create();d.addPage([w,h]);const bytes=new Uint8Array(await d.save());
+    const names=new Set(tabs.map(t=>t.name));try{(await DDB.all()).forEach(r=>names.add(r.name))}catch(e){}
+    let n=1,name;do{name='Naamloos document'+(n>1?' '+n:'')+'.pdf';n++}while(names.has(name));
+    if(S.crop)endCrop();if(S.draft)finishDraft();await saveNow();
+    await openBytes(bytes,name,{keepId:'nieuw|'+Date.now(),quiet:true});
+    say('Nieuw document. Klik op <b>Nieuw</b> links om tekst te typen, of voeg vormen en afbeeldingen toe.',5000);
+  }catch(e){say('Een nieuw document maken lukte niet: '+esc(e.message||e),6000)}
+}
+window.__newBlank=newBlank;
+const openPdf=()=>{if(window.desktop&&desktop.openDialog)desktop.openDialog();else fileIn.click()};
+const newItems=()=>[
+  {ico:'file',t:'Lege pagina · A4 staand',k:'Ctrl+N',f:()=>newBlank('a4p')},
+  {ico:'file',t:'Lege pagina · A4 liggend',f:()=>newBlank('a4l')},
+  {ico:'file',t:'Lege pagina · Letter',f:()=>newBlank('letter')},'-',
+  {ico:'open',t:'PDF openen…',k:'Ctrl+O',f:openPdf}];
+function showNewMenu(anchor){menuOf(newMenu,newItems());if(newMenu.classList.contains('show')&&openMenu===newMenu){hideMenus();return}hideMenus();const r=anchor.getBoundingClientRect();placeMenu(newMenu,r.left,r.bottom+6)}
+function renderTabs(){
+  tabbar.innerHTML='';
+  for(const t of tabs){
+    const d=el('div',{class:'tab'+(S.doc&&t.id===S.docId?' on':''),title:t.name},ico('file')+'<span class="tn"></span><button class="tx" title="Tabblad sluiten">×</button>');
+    d.querySelector('.tn').textContent=String(t.name||'').replace(/\.pdf$/i,'');
+    d.onclick=e=>{if(!e.target.closest('.tx'))switchTab(t.id)};
+    d.querySelector('.tx').onclick=e=>{e.stopPropagation();closeTab(t.id)};
+    d.addEventListener('auxclick',e=>{if(e.button===1){e.preventDefault();closeTab(t.id)}});
+    tabbar.appendChild(d);
+  }
+  const plus=el('button',{class:'tabplus',title:'Nieuw document of PDF openen'},ico('plus'));
+  plus.onclick=e=>{e.stopPropagation();showNewMenu(plus)};tabbar.appendChild(plus);
+  const on=tabbar.querySelector('.tab.on');if(on)on.scrollIntoView({block:'nearest',inline:'nearest'});
+}
+window.tabsOpened=(id,name)=>{const t=tabs.find(x=>x.id===id);if(t)t.name=name;else tabs.push({id,name});saveTabs();LS.set('pdfb-tab-active',id);renderTabs()};
+window.tabsForget=id=>{tabs=tabs.filter(t=>t.id!==id);saveTabs();renderTabs()};
+let switching=false;
+async function switchTab(id){
+  if(switching||(S.doc&&id===S.docId))return;switching=true;
+  try{
+    if(S.crop)endCrop();if(S.draft)finishDraft();await saveNow();
+    let rec=null;try{rec=await DDB.get(id)}catch(e){}
+    if(!rec){say('Dit bestand staat niet meer bij je bewaarde bestanden.',4000);tabsForget(id);return}
+    await openBytes(new Uint8Array(rec.bytes),rec.name,{rec,quiet:true});
+  }finally{switching=false;renderTabs()}
+}
+function closeDoc(){
+  S.doc=null;S.docId=null;S.pages=[];S.edits=[];S.objs=[];S.undo=[];S.redo=[];S.draft=null;S.osel=[];S.group=null;S.crop=null;
+  $('#pages').innerHTML='';$('#drop').style.display='';$('#fname').textContent='Nog geen bestand';saveState('');
+  for(const id of ['t-edit','t-add','t-cover','t-obj','t-layers','t-pages','zoom','dl'])$('#'+id).disabled=true;
+  fillForm();fillObjForm();syncUI();renderLib();
+  if(window.desktop&&desktop.setTitle)desktop.setTitle('');
+  LS.set('pdfb-tab-active','');
+}
+async function closeTab(id){
+  const i=tabs.findIndex(t=>t.id===id);if(i<0)return;
+  const active=S.doc&&id===S.docId;
+  if(active){if(S.crop)endCrop();if(S.draft)finishDraft();await saveNow()}
+  tabs.splice(i,1);saveTabs();
+  if(active){const next=tabs[i]||tabs[i-1];if(next)await switchTab(next.id);else closeDoc()}
+  renderTabs();
+}
+document.addEventListener('keydown',e=>{
+  if(!(e.ctrlKey||e.metaKey)||e.altKey)return;
+  if(e.key.toLowerCase()==='n'&&!e.shiftKey){e.preventDefault();newBlank('a4p')}
+  else if(e.key==='Tab'&&tabs.length>1){e.preventDefault();const i=Math.max(0,tabs.findIndex(t=>t.id===S.docId)),j=(i+(e.shiftKey?-1:1)+tabs.length)%tabs.length;switchTab(tabs[j].id)}
+},true);
+renderTabs();
+
 // ---------- gereedschapsrail ----------
 const main=$('#main'),rail=el('nav',{id:'rail'});
 const toolBtn=(id,ic,label,title)=>{const b=$('#'+id);b.className='ri'+(b.classList.contains('on')?' on':'');b.innerHTML=ico(ic)+label;if(title)b.title=title;return b};
@@ -5044,7 +5141,7 @@ function toggleMenu(m,anchor,side){
   if(side==='right')placeMenu(m,r.right+8,r.top);else placeMenu(m,r.right-m.offsetWidth||r.left,r.bottom+6);
   if(side!=='right'){const w=m.offsetWidth;m.style.left=Math.max(8,Math.min(innerWidth-w-8,r.right-w))+'px'}
 }
-document.addEventListener('pointerdown',e=>{if(openMenu&&!e.target.closest('.ui-menu')&&!e.target.closest('#dlmore')&&!e.target.closest('#rail-shapes')&&!e.target.closest('#th-add'))hideMenus()},true);
+document.addEventListener('pointerdown',e=>{if(openMenu&&!e.target.closest('.ui-menu')&&!e.target.closest('#dlmore')&&!e.target.closest('#rail-shapes')&&!e.target.closest('#th-add')&&!e.target.closest('.tabplus')&&!e.target.closest('#newblank'))hideMenus()},true);
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&openMenu){hideMenus();e.stopPropagation()}},true);
 function menuOf(m,items){
   m.innerHTML='';
@@ -5367,6 +5464,7 @@ const help=el('div',{id:'ui-helpback'},`<div id="ui-help"><h2>Sneltoetsen</h2><p
 <h4>Beeld en bestand</h4>
 <div class="kr"><span>Zoomen</span><span><kbd>Ctrl</kbd>+scroll</span></div><div class="kr"><span>Passend</span><span><kbd>Ctrl</kbd><kbd>0</kbd></span></div>
 <div class="kr"><span>Opslaan</span><span><kbd>Ctrl</kbd><kbd>S</kbd></span></div><div class="kr"><span>Openen</span><span><kbd>Ctrl</kbd><kbd>O</kbd></span></div>
+<div class="kr"><span>Nieuw document</span><span><kbd>Ctrl</kbd><kbd>N</kbd></span></div><div class="kr"><span>Volgend tabblad</span><span><kbd>Ctrl</kbd><kbd>Tab</kbd></span></div>
 </div><div style="display:flex;justify-content:flex-end;gap:8px;margin-top:18px"><button id="ui-tourbtn">Rondleiding</button><button class="primary" id="ui-helpok">Sluiten</button></div></div>`);
 document.body.appendChild(help);
 const showHelp=v=>help.classList.toggle('show',v);
@@ -5416,7 +5514,10 @@ addEventListener('resize',()=>{if(ti>=0)showStep()});
 
 // ---------- startscherm ----------
 {const d=$('#drop');d.insertAdjacentHTML('afterbegin',`<div class="dicon">${ico('file')}</div>`);d.querySelector('h2').textContent='Open een PDF om te bewerken';
- const b=d.querySelector('label.btn');b.removeAttribute('style');b.className='btn primary';b.innerHTML=ico('open')+'PDF kiezen';pickVia(b,$('#file'))}
+ const b=d.querySelector('label.btn');b.removeAttribute('style');b.className='btn primary';b.innerHTML=ico('open')+'PDF kiezen';pickVia(b,$('#file'));
+ const wrap=el('div',{class:'dbtns'}),nb=el('button',{id:'newblank'},ico('file')+'Lege pagina');b.parentNode.insertBefore(wrap,b);wrap.append(b,nb);
+ nb.onclick=e=>{e.stopPropagation();showNewMenu(nb)};
+ d.querySelector('h2').textContent='Open een PDF of begin met een lege pagina'}
 
 // ---------- één selectie voor tekst en objecten: wisselt vanzelf tussen tekst en objecten ----------
 function textAtPt(P,x,y){
@@ -5504,6 +5605,7 @@ if(window.desktop){
   desktop.onOpenFile(f=>{S.extOpen=true;openBytes(new Uint8Array(f.bytes),f.name,{})});
   desktop.onMenu('save',()=>{if(S.doc)$('#dl').click();else say('Open eerst een PDF.',3000)});
   desktop.onMenu('library',()=>{$('#libbtn').click()});
+  desktop.onMenu('new',()=>{if(window.__newBlank)__newBlank('a4p')});
   desktop.onMenu('zoomin',()=>setZoom(zoomStep(1)));
   desktop.onMenu('zoomout',()=>setZoom(zoomStep(-1)));
   desktop.onMenu('zoomfit',()=>{if(S.doc)fitScale().then(s=>setZoom(s,null,true))});

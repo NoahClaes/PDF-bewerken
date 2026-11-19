@@ -81,6 +81,7 @@ if(window.desktop){
   desktop.onOpenFile(f=>{S.extOpen=true;openBytes(new Uint8Array(f.bytes),f.name,{})});
   desktop.onMenu('save',()=>{if(S.doc)$('#dl').click();else say('Open eerst een PDF.',3000)});
   desktop.onMenu('library',()=>{$('#libbtn').click()});
+  desktop.onMenu('new',()=>{if(window.__newBlank)__newBlank('a4p')});
   desktop.onMenu('zoomin',()=>setZoom(zoomStep(1)));
   desktop.onMenu('zoomout',()=>setZoom(zoomStep(-1)));
   desktop.onMenu('zoomfit',()=>{if(S.doc)fitScale().then(s=>setZoom(s,null,true))});

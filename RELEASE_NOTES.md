@@ -1,6 +1,4 @@
-Nieuw in **PDF Bewerken 2.4.0**
+Nieuw in **PDF Bewerken 2.5.0**
 
-- **Zelf bijsnijden**: klik op een afbeelding en kies **Bijsnijden** (of dubbelklik op de afbeelding). Sleep de randen en hoeken om bij te snijden, en sleep binnen het kader om de foto te verschuiven. Wat wegvalt, zie je donkerder.
-- **Vormen**: rechthoek, afgeronde hoeken (met een schuifje voor de ronding), ovaal, cirkel, driehoek, ruit en zeshoek.
-- **Klaar** of Enter rondt af; **Herstellen** maakt de uitsnede leeg; **Uitsnede weghalen** toont weer de hele afbeelding.
-- Werkt voor afbeeldingen uit de PDF en voor afbeeldingen die je zelf toevoegt, ook als ze gedraaid zijn.
+- **Begin met een lege pagina**: kies op het startscherm **Lege pagina** (A4 staand, A4 liggend of Letter), klik op **+** bij de tabbladen, gebruik **Bestand → Nieuw document** of druk **Ctrl+N**.
+- **Tabbladen bovenaan, zoals in Canva**: elk bestand dat je opent of maakt, krijgt een tabblad. Klik om te wisselen (je aanpassingen worden eerst bewaard), sluit met het kruisje of met de middelste muisknop, en wissel met **Ctrl+Tab**. De tabbladen blijven staan als je de app opnieuw start.
